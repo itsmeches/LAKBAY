@@ -1,0 +1,45 @@
+name: quality
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: lakbay_test
+          POSTGRES_USER: lakbay
+          POSTGRES_PASSWORD: testing-only
+        ports: ['5432:5432']
+        options: --health-cmd="pg_isready -U lakbay" --health-interval=10s --health-timeout=5s --health-retries=5
+    strategy:
+      matrix:
+        database: [sqlite, pgsql]
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: ${{ matrix.database }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: ${{ matrix.database == 'pgsql' && 'lakbay_test' || ':memory:' }}
+      DB_USERNAME: lakbay
+      DB_PASSWORD: testing-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, pdo_pgsql, pdo_sqlite, gd, zip
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist
+      - run: cp .env.example .env
+      - run: php artisan key:generate
+      - run: php artisan test
+      - run: php vendor/bin/phpstan analyse --memory-limit=512M
+      - run: php vendor/bin/pint --test
+      - run: composer audit
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build

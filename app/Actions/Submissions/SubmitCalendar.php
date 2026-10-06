@@ -1,0 +1,14 @@
+<?php
+
+namespace App\Actions\Submissions;
+
+use App\Models\Calendar;
+use App\Models\User;
+
+class SubmitCalendar
+{
+    public function execute(User $actor, Calendar $calendar, int $policyId, array $evidence, ?int $previousId = null)
+    {
+        return app(SubmitActivity::class)->execute($actor, $calendar->activities()->pluck('id')->all(), $policyId, $evidence, $calendar->id, $previousId);
+    }
+}

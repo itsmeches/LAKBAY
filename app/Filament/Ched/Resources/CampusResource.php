@@ -1,0 +1,20 @@
+<?php
+
+namespace App\Filament\Ched\Resources;
+
+use App\Filament\Support\ScopedResource;
+use App\Models\Campus;
+
+class CampusResource extends ScopedResource
+{
+    protected static ?string $model = Campus::class;
+
+    protected static ?string $createPermission = 'institutions.manage';
+
+    protected static string $readPermission = 'records.view';
+
+    public static function getPages(): array
+    {
+        return ['index' => Pages\ListCampus::route('/'), 'view' => Pages\ViewCampus::route('/{record}')];
+    }
+}

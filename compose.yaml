@@ -1,0 +1,63 @@
+services:
+  app:
+    build:
+      context: .
+      target: app
+    env_file: .env.production
+    volumes:
+      - private_documents:/var/www/storage/app/private
+      - clamav_data:/var/lib/clamav
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+  web:
+    build:
+      context: .
+      target: web
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on: [app]
+    restart: unless-stopped
+  worker:
+    build:
+      context: .
+      target: app
+    env_file: .env.production
+    command: php artisan queue:work --tries=3 --timeout=180
+    volumes:
+      - private_documents:/var/www/storage/app/private
+      - clamav_data:/var/lib/clamav
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+  scheduler:
+    build:
+      context: .
+      target: app
+    env_file: .env.production
+    command: php artisan schedule:work
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+  db:
+    image: postgres:17
+    env_file: .env.production
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-lakbay}
+      POSTGRES_USER: ${DB_USERNAME:-lakbay}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in the compose environment}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+volumes:
+  private_documents:
+  postgres_data:
+  clamav_data:

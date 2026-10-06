@@ -1,0 +1,4 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>@yield('title','LAKBAY') • CHED Region IV-A</title><link rel="stylesheet" href="{{ asset('css/lakbay-public.css') }}"></head><body>
+<header><a class="brand" href="{{ url('/') }}"><span class="mark">L</span><span>LAKBAY<small>CHED REGION IV-A · CALABARZON</small></span></a><nav aria-label="Main navigation"><a href="{{ url('/guidelines') }}">Guidelines</a><a href="{{ url('/faq') }}">FAQs</a><a class="button secondary" href="{{ url('/hei') }}">HEI portal ↗</a><a href="{{ url('/ched') }}">CHED sign in</a></nav></header>
+@if(session('status'))<div class="notice">{{ session('status') }}</div>@endif
+<main>@yield('content')</main><footer><span>Local Off-Campus Activities · CHED Region IV-A</span><span>Institutional responsibility. Secure records.</span></footer></body></html>

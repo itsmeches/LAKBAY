@@ -1,0 +1,3 @@
+<?php
+
+return ['criteria' => ['1' => 'Institutional guidelines and grievance mechanisms', '2' => 'Designated responsible offices and personnel', '3' => 'Timely documentary submissions', '4' => 'Student consultation and supporting records', '5' => 'PIC/APIC and authorized participant records', '6' => 'Diagnostic assessment', '7' => 'Risk assessment and contingency plan', '8' => 'Transportation arrangements', '9' => 'Health, medical and emergency preparedness', '10' => 'Pre-departure orientation', '11' => 'Agency and host coordination', '12' => 'Student safety, welfare and well-being', '13' => 'Complete and retrievable records', '14' => 'Timely report of completion']];
