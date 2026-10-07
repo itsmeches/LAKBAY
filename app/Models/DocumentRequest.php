@@ -11,7 +11,7 @@ class DocumentRequest extends Model
 
     protected function casts(): array
     {
-        return ['due_at' => 'immutable_datetime', 'responded_at' => 'immutable_datetime'];
+        return ['due_at' => 'immutable_datetime', 'responded_at' => 'immutable_datetime', 'deadline_parameters' => 'array'];
     }
 
     public function institution(): BelongsTo

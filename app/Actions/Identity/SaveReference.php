@@ -2,6 +2,7 @@
 
 namespace App\Actions\Identity;
 
+use App\Actions\Activities\SaveClocaCalendar;
 use App\Models\AcademicPeriod;
 use App\Models\Calendar;
 use App\Models\Campus;
@@ -15,6 +16,9 @@ class SaveReference
 {
     public function execute(User $actor, string $model, array $data)
     {
+        if ($model === Calendar::class) {
+            return app(SaveClocaCalendar::class)->execute($actor, $data);
+        }
         if ($model === Institution::class) {
             abort_unless($actor->is_active && $actor->hasVerifiedEmail() && $actor->can('institutions.manage') && $actor->region_id, 403);
             Validator::make($data, ['ched_code' => 'required|unique:institutions,ched_code', 'name' => 'required|string', 'institution_type' => 'required|in:suc,luc,private'])->validate();

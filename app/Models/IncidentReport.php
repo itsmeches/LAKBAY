@@ -17,7 +17,7 @@ class IncidentReport extends Model
 
     protected function casts(): array
     {
-        return ['deadline_parameters' => 'array', 'occurred_at' => 'immutable_datetime', 'due_at' => 'immutable_datetime', 'is_late' => 'boolean', 'provisional_deadline' => 'boolean'];
+        return ['annex_h' => 'array', 'deadline_parameters' => 'array', 'occurred_at' => 'immutable_datetime', 'due_at' => 'immutable_datetime', 'is_late' => 'boolean', 'provisional_deadline' => 'boolean'];
     }
 
     public function institution(): BelongsTo

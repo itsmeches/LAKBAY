@@ -3,7 +3,7 @@
 Read README.md, docs/architecture.md, and docs/CHED-clarifications.md before changing workflows. These rules supplement the generated Laravel Boost guidance below.
 
 - Laravel 13 / Filament 5 / Livewire 4 modular monolith: HEI/CHED panels and Blade public site. Confirm installed APIs.
-- The policy source is a draft. Keep provisional interpretations explicit; never confirm policy rules without authoritative CHED instructions.
+- Preserve the July draft as history. CMO No. 24, s. 2026 is the candidate baseline; official activation requires verified publication, its reference and publication +15-day effectivity. Keep unresolved interpretations explicit; never invent publication dates or confirm rules without authoritative CHED instructions.
 - Keep transitions in shared Actions, not exclusively in forms/resource callbacks.
 - Enforce verified membership, jurisdiction, ownership, and confidentiality on every interface, download, preview, export, and job. Administration does not imply restricted-case access.
 - Acknowledgment is receipt/completeness, not authorization. Track HEI authorization, acknowledgment, execution, restrictions, and exceptional clearance independently.

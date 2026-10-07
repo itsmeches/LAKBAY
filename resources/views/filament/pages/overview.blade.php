@@ -98,7 +98,8 @@
 
         <details class="lakbay-policy">
             <summary>Policy and acknowledgment guidance{{ $draftPolicy ? ' — confirmation pending' : '' }}</summary>
-            @if($draftPolicy)<p>The July 2026 draft requires CHED confirmation. Production submissions require a confirmed policy. Incident reminders provisionally use 24 hours.</p>@endif
+            @if($draftPolicy)<p>CMO No. 24, s. 2026 is available as a candidate for local testing. Official use requires verified publication and effectivity. The candidate uses 48-hour incident reporting; historical draft calculations remain preserved.</p>@endif
+            <p>For CMO 24 Category 1, submit the annual calendar package first and later submit pre-activity evidence from each Activity. Unresolved deadline anchors remain labelled for CHED clarification.</p>
             <p>CHED acknowledgment records receipt and completeness. HEI authorization, implementation status and exceptional clearance are tracked separately.</p>
         </details>
     </div>

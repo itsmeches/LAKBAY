@@ -1,0 +1,34 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('calendars', function (Blueprint $table) {
+            $table->json('annex_b')->nullable();
+        });
+        Schema::table('activity_versions', function (Blueprint $table) {
+            $table->json('cloca')->nullable();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('activity_versions', function (Blueprint $table) {
+            $table->dropColumn('cloca');
+        });
+        Schema::table('calendars', function (Blueprint $table) {
+            $table->dropColumn('annex_b');
+        });
+    }
+};

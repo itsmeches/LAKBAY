@@ -13,7 +13,7 @@ class FormTemplate extends Model
 
     protected function casts(): array
     {
-        return ['is_public' => 'boolean', 'active_from' => 'immutable_date', 'active_until' => 'immutable_date'];
+        return ['is_public' => 'boolean', 'metadata' => 'array', 'active_from' => 'immutable_date', 'active_until' => 'immutable_date'];
     }
 
     public function policyVersion(): BelongsTo

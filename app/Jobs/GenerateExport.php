@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Export;
+use App\Models\RegionalReport;
 use App\Models\User;
 use App\Services\Reporting\RegionalReportBuilder;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -20,7 +21,14 @@ class GenerateExport implements ShouldQueue
     {
         $e = Export::findOrFail($this->exportId);
         $actor = User::findOrFail($e->requested_by);
-        $data = app(RegionalReportBuilder::class)->build($actor, $e->filters['cutoff_at'] ?? null);
+        if (! empty($e->filters['regional_report_id'])) {
+            $report = RegionalReport::findOrFail($e->filters['regional_report_id']);
+            abort_unless($actor->is_active && $actor->hasVerifiedEmail() && $actor->can('panel.ched') && $actor->can('reports.export') && $actor->region_id === $report->region_id, 403);
+            $data = ['cutoff_at' => $report->cutoff_at->toIso8601String(), 'period_from' => $report->filters['period_from'] ?? null,
+                'totals' => $report->totals, 'activities' => $report->filters['activities'], 'monitoring' => $report->filters['monitoring'] ?? []];
+        } else {
+            $data = app(RegionalReportBuilder::class)->build($actor, $e->filters['cutoff_at'] ?? null);
+        }
         $path = 'exports/'.$e->id.'.'.($e->filters['format'] ?? 'csv');
         if (($e->filters['format'] ?? 'csv') === 'pdf') {
             $contents = Pdf::loadView('documents.regional-report', ['report' => $data])->setPaper('a4', 'landscape')->output();
@@ -31,7 +39,22 @@ class GenerateExport implements ShouldQueue
                 $values = [$r['institution_id'], $r['title'], $r['category'], $r['requirement_category'], $r['starts_at'], $r['student_participations'], $r['reference'], $r['status'], $r['is_late'] ? 'Yes' : 'No'];
                 $values = array_map(fn ($v) => is_string($v) && preg_match('/^[=+@\-\t\r]/', $v) ? "'".$v : $v, $values);
                 fputcsv($stream, $values, ',', '"', '');
-            }rewind($stream);
+            }
+            if (! empty($e->filters['regional_report_id'])) {
+                fputcsv($stream, ['Summary metric', 'Value'], ',', '"', '');
+                foreach ($data['totals'] as $metric => $value) {
+                    fputcsv($stream, [$metric, $value], ',', '"', '');
+                }
+                fputcsv($stream, ['Institution', 'Monitoring date', 'Criterion', 'Compliance', 'Verification', 'Remarks'], ',', '"', '');
+                foreach ($data['monitoring'] as $record) {
+                    foreach ($record['items'] as $item) {
+                        $values = [$record['institution_id'], $record['monitored_on'], $item['criterion'], $item['compliance'], $item['verification'], $item['remarks']];
+                        $values = array_map(fn ($value) => is_string($value) && preg_match('/^[=+@\-\t\r]/', $value) ? "'".$value : $value, $values);
+                        fputcsv($stream, $values, ',', '"', '');
+                    }
+                }
+            }
+            rewind($stream);
             $contents = stream_get_contents($stream);
             fclose($stream);
         }

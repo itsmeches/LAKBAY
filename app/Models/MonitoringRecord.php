@@ -14,7 +14,7 @@ class MonitoringRecord extends Model
 
     protected function casts(): array
     {
-        return ['monitored_on' => 'immutable_date'];
+        return ['monitored_on' => 'immutable_date', 'annex_metadata' => 'array', 'annex_m' => 'array'];
     }
 
     public function institution(): BelongsTo
@@ -30,5 +30,14 @@ class MonitoringRecord extends Model
     public function items(): HasMany
     {
         return $this->hasMany(MonitoringItem::class);
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (MonitoringRecord $record): void {
+            if ($record->isDirty('annex_m')) {
+                throw new \LogicException('Annex M snapshots cannot be overwritten.');
+            }
+        });
     }
 }

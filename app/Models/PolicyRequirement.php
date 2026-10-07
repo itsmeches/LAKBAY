@@ -13,7 +13,7 @@ class PolicyRequirement extends Model
 
     protected function casts(): array
     {
-        return [];
+        return ['supporting_document_codes' => 'array'];
     }
 
     public function policyVersion(): BelongsTo

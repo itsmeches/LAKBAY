@@ -17,7 +17,7 @@ class ActivityVersion extends Model
 
     protected function casts(): array
     {
-        return ['starts_at' => 'immutable_datetime', 'ends_at' => 'immutable_datetime', 'departure_at' => 'immutable_datetime', 'return_at' => 'immutable_datetime', 'conditions' => 'array', 'authorization' => 'array'];
+        return ['starts_at' => 'immutable_datetime', 'ends_at' => 'immutable_datetime', 'departure_at' => 'immutable_datetime', 'return_at' => 'immutable_datetime', 'conditions' => 'array', 'authorization' => 'array', 'contracts' => 'array', 'preparation' => 'array', 'cloca' => 'array', 'diagnostic' => 'array', 'racp' => 'array', 'annex_j' => 'array'];
     }
 
     public function activity(): BelongsTo

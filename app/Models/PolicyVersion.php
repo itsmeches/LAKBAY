@@ -13,7 +13,7 @@ class PolicyVersion extends Model
 
     protected function casts(): array
     {
-        return ['effective_on' => 'immutable_date', 'publication_on' => 'immutable_date', 'confirmed_at' => 'immutable_datetime'];
+        return ['effective_on' => 'immutable_date', 'publication_on' => 'immutable_date', 'issued_on' => 'immutable_date', 'confirmed_at' => 'immutable_datetime', 'parameters' => 'array'];
     }
 
     public function requirements(): HasMany

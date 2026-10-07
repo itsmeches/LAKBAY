@@ -16,7 +16,7 @@ class ChangeReport extends Model
 
     protected function casts(): array
     {
-        return ['deadline_parameters' => 'array', 'changed_at' => 'immutable_datetime', 'due_at' => 'immutable_datetime', 'is_late' => 'boolean'];
+        return ['annex_i' => 'array', 'deadline_parameters' => 'array', 'changed_at' => 'immutable_datetime', 'notified_at' => 'immutable_datetime', 'due_at' => 'immutable_datetime', 'is_late' => 'boolean'];
     }
 
     public function institution(): BelongsTo
@@ -42,5 +42,15 @@ class ChangeReport extends Model
     public function document(): BelongsTo
     {
         return $this->belongsTo(Document::class, 'document_id');
+    }
+
+    public function supplementsReport(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'supplements_report_id');
+    }
+
+    public function changeReportDraft(): BelongsTo
+    {
+        return $this->belongsTo(ChangeReportDraft::class);
     }
 }

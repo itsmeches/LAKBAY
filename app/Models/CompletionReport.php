@@ -16,7 +16,7 @@ class CompletionReport extends Model
 
     protected function casts(): array
     {
-        return ['deadline_parameters' => 'array', 'ended_at' => 'immutable_datetime', 'due_at' => 'immutable_datetime', 'is_late' => 'boolean', 'incidents_encountered' => 'boolean'];
+        return ['annex_g' => 'array', 'deadline_parameters' => 'array', 'incident_report_ids' => 'array', 'ended_at' => 'immutable_datetime', 'due_at' => 'immutable_datetime', 'is_late' => 'boolean', 'incidents_encountered' => 'boolean'];
     }
 
     public function institution(): BelongsTo

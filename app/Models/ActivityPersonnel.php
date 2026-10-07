@@ -16,7 +16,7 @@ class ActivityPersonnel extends Model
 
     protected function casts(): array
     {
-        return ['first_aid_trained' => 'boolean'];
+        return ['first_aid_trained' => 'boolean', 'hei_employed' => 'boolean', 'accompanies_activity' => 'boolean'];
     }
 
     public function activityVersion(): BelongsTo

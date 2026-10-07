@@ -14,7 +14,7 @@ class ClearanceRequest extends Model
 
     protected function casts(): array
     {
-        return ['decided_at' => 'immutable_datetime', 'decision_received_at' => 'immutable_datetime'];
+        return ['decided_at' => 'immutable_datetime', 'decision_received_at' => 'immutable_datetime', 'application_received_at' => 'immutable_datetime', 'application_due_at' => 'immutable_datetime', 'application_is_late' => 'boolean', 'deadline_parameters' => 'array', 'routing_history' => 'array'];
     }
 
     public function institution(): BelongsTo

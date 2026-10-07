@@ -16,7 +16,7 @@ class SubmissionRequirement extends Model
 
     protected function casts(): array
     {
-        return ['document_ids' => 'array', 'due_at' => 'immutable_datetime'];
+        return ['document_ids' => 'array', 'rule_snapshot' => 'array', 'due_at' => 'immutable_datetime'];
     }
 
     public function submission(): BelongsTo

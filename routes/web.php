@@ -1,13 +1,29 @@
 <?php
 
+use App\Http\Controllers\AcknowledgmentController;
+use App\Http\Controllers\CertificationController;
+use App\Http\Controllers\ChangeReportController;
+use App\Http\Controllers\ClocaController;
+use App\Http\Controllers\CompletionReportController;
+use App\Http\Controllers\ConsentFormController;
+use App\Http\Controllers\DiagnosticController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\IncidentReportController;
 use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\ItineraryController;
+use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\PublicTemplateController;
+use App\Http\Controllers\RacpController;
+use App\Http\Controllers\SaaController;
 use App\Http\Middleware\EnsureMfaEnabled;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
+Route::get('/monitoring-records/{record}/print', [MonitoringController::class, 'show'])->whereNumber('record')->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('monitoring.print');
+Route::get('/activity-versions/{version}/consent', [ConsentFormController::class, 'form'])->whereNumber('version')->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('consent.form');
+Route::post('/activity-versions/{version}/consent', [ConsentFormController::class, 'generate'])->whereNumber('version')->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('consent.generate');
+Route::get('/submissions/{publicId}/acknowledgment', [AcknowledgmentController::class, 'show'])->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('acknowledgment.print');
 Route::get('/guidelines', [PublicTemplateController::class, 'index'])->name('guidelines');
 Route::get('/templates/{id}', [PublicTemplateController::class, 'download'])->whereNumber('id')->middleware('throttle:30,1')->name('templates.download');
 Route::view('/faq', 'faq')->name('faq');
@@ -18,3 +34,21 @@ Route::get('/documents/{publicId}', DocumentController::class)->middleware(['aut
 Route::get('/exports/{export}', ExportController::class)->middleware(['auth', EnsureMfaEnabled::class])->name('exports.download');
 
 Route::get('/documents/{publicId}/preview', [DocumentController::class, 'preview'])->middleware(['auth', EnsureMfaEnabled::class])->name('documents.preview');
+Route::get('/calendars/{calendar}/cloca', [ClocaController::class, 'calendar'])->whereNumber('calendar')->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('cloca.calendar');
+Route::get('/submissions/{publicId}/cloca', [ClocaController::class, 'submission'])->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('cloca.submission');
+Route::get('/affidavits/{affidavit}/saa', [SaaController::class, 'draft'])->whereNumber('affidavit')->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('saa.draft');
+Route::get('/submissions/{publicId}/saa', [SaaController::class, 'submission'])->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('saa.submission');
+Route::get('/activities/{activity}/diagnostic', [DiagnosticController::class, 'activity'])->whereNumber('activity')->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('diagnostic.activity');
+Route::get('/activities/{activity}/itinerary', [ItineraryController::class, 'activity'])->whereNumber('activity')->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('itinerary.activity');
+Route::get('/submissions/{publicId}/itineraries/{version?}', [ItineraryController::class, 'submission'])->whereNumber('version')->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('itinerary.submission');
+Route::get('/submissions/{publicId}/diagnostics/{version?}', [DiagnosticController::class, 'submission'])->whereNumber('version')->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('diagnostic.submission');
+Route::get('/activities/{activity}/racp', [RacpController::class, 'activity'])->whereNumber('activity')->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('racp.activity');
+Route::get('/submissions/{publicId}/racps/{version?}', [RacpController::class, 'submission'])->whereNumber('version')->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('racp.submission');
+Route::get('/certifications/{draft}/print', [CertificationController::class, 'draft'])->whereNumber('draft')->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('certification.draft');
+Route::get('/submissions/{publicId}/certification', [CertificationController::class, 'submission'])->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('certification.submission');
+Route::get('/completion-drafts/{draft}/print', [CompletionReportController::class, 'draft'])->whereNumber('draft')->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('roc.draft');
+Route::get('/completion-reports/{report}/print', [CompletionReportController::class, 'report'])->whereNumber('report')->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('roc.report');
+Route::get('/change-drafts/{draft}/print', [ChangeReportController::class, 'draft'])->whereNumber('draft')->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('change.draft');
+Route::get('/change-reports/{report}/print', [ChangeReportController::class, 'report'])->whereNumber('report')->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('change.report');
+Route::get('/incident-drafts/{draft}/print', [IncidentReportController::class, 'draft'])->whereNumber('draft')->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('incident.draft');
+Route::get('/incident-reports/{report}/print', [IncidentReportController::class, 'report'])->whereNumber('report')->middleware(['auth', EnsureMfaEnabled::class, 'throttle:30,1'])->name('incident.report');

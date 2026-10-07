@@ -4,8 +4,10 @@ namespace App\Policies;
 
 use App\Models\CaseRecord;
 use App\Models\ClearanceRequest;
+use App\Models\CompletionReportDraft;
 use App\Models\Document;
 use App\Models\IncidentReport;
+use App\Models\IncidentReportDraft;
 use App\Models\Institution;
 use App\Models\InstitutionalRestriction;
 use App\Models\User;
@@ -27,7 +29,10 @@ class InstitutionRecordPolicy
         if ($record instanceof CaseRecord || $record instanceof ClearanceRequest || $record instanceof InstitutionalRestriction) {
             return $user->can('cases.sensitive') && app(Access::class)->regional($user, $id);
         }
-        if ($record instanceof IncidentReport && ! app(Access::class)->owns($user, $id)) {
+        if (($record instanceof IncidentReport || $record instanceof IncidentReportDraft) && ! app(Access::class)->owns($user, $id)) {
+            return $user->can('incidents.view') && app(Access::class)->regional($user, $id);
+        }
+        if ($record instanceof CompletionReportDraft && ($record->details['incidents_encountered'] ?? false) && ! app(Access::class)->owns($user, $id)) {
             return $user->can('incidents.view') && app(Access::class)->regional($user, $id);
         }
 

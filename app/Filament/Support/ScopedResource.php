@@ -16,6 +16,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 
 abstract class ScopedResource extends Resource
 {
@@ -28,6 +29,11 @@ abstract class ScopedResource extends Resource
         $hei = str_contains(static::class, '\\Hei\\');
 
         return match (class_basename(static::$model)) {
+            'ChangeReportDraft' => [$hei ? '3. After the activity' : 'Activity reports', $hei ? 'Prepare changes (Annex I)' : 'Change preparations (Annex I)', 15, 'heroicon-o-arrow-path'],
+            'IncidentReportDraft' => [$hei ? '3. After the activity' : 'Activity reports', $hei ? 'Prepare incident (Annex H)' : 'Incident preparations (Annex H)', 25, 'heroicon-o-exclamation-triangle'],
+            'CompletionReportDraft' => [$hei ? '3. After the activity' : 'Activity reports', $hei ? 'Prepare ROC (Annex G)' : 'ROC preparation records (Annex G)', 5, 'heroicon-o-document-text'],
+            'AccountabilityAffidavit' => [$hei ? '1. Prepare' : 'Activity records', 'Sworn affidavits (SAA)', 25, 'heroicon-o-document-check'],
+            'CertificationDraft' => [$hei ? '1. Prepare' : 'Activity records', 'Certifications (Annex F)', 26, 'heroicon-o-clipboard-document-check'],
             'AcademicPeriod' => [$hei ? '1. Prepare' : 'Activity records', 'Academic periods', 10, 'heroicon-o-calendar'],
             'Calendar' => [$hei ? '1. Prepare' : 'Activity records', 'Annual calendars (CLOCA)', 20, 'heroicon-o-calendar-days'],
             'Activity' => [$hei ? '1. Prepare' : 'Activity records', 'Activity plans', 30, 'heroicon-o-map'],
@@ -87,6 +93,12 @@ abstract class ScopedResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $q = app(Access::class)->scope(parent::getEloquentQuery(), auth()->user(), static::$model === Institution::class ? 'id' : 'institution_id');
+        if (class_basename(static::$model) === 'IncidentReportDraft' && ! auth()->user()->can('panel.hei') && ! auth()->user()->can('incidents.view')) {
+            $q->whereRaw('1=0');
+        }
+        if (class_basename(static::$model) === 'CompletionReportDraft' && ! auth()->user()->can('panel.hei') && ! auth()->user()->can('incidents.view')) {
+            $q->where('details->incidents_encountered', false);
+        }
         if (static::$model === Document::class) {
             $q->where(function ($q) {
                 $q->where('confidentiality', 'institutional');
@@ -110,7 +122,7 @@ abstract class ScopedResource extends Resource
     {
         $fields = Definitions::detailFields(static::$model);
         $entries = array_map(
-            fn ($field) => TextEntry::make($field)->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : $state),
+            fn ($field) => static::formatRecordField(TextEntry::make($field)->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : $state), $field),
             array_values(array_diff($fields, ['snapshot'])),
         );
         $sections = [Section::make('Record overview')->schema($entries)->columns(2)->columnSpanFull()];
@@ -142,7 +154,7 @@ abstract class ScopedResource extends Resource
     public static function table(Table $table): Table
     {
         $columns = array_map(function ($field) {
-            $column = TextColumn::make($field)->searchable()->sortable()->wrap();
+            $column = static::formatRecordField(TextColumn::make($field)->searchable()->sortable()->wrap(), $field);
             if (in_array($field, ['status', 'scan_status', 'execution_status'], true)) {
                 $column->badge()->formatStateUsing(fn ($state) => ucfirst(str_replace('_', ' ', $state)))
                     ->color(fn ($state) => match ($state) {
@@ -169,5 +181,34 @@ abstract class ScopedResource extends Resource
         }
 
         return $table->columns($columns)->recordActions([ViewAction::make(), ActionGroup::make(WorkflowUi::actions(static::$model))->label('More actions')->icon('heroicon-o-ellipsis-horizontal')])->defaultSort('id', 'desc')->paginated([10, 25, 50]);
+    }
+
+    private static function formatRecordField(TextColumn|TextEntry $component, string $field): TextColumn|TextEntry
+    {
+        $model = new (static::getModel());
+        $segments = explode('.', $field);
+        $attribute = array_pop($segments);
+        foreach ($segments as $relationship) {
+            if (! method_exists($model, $relationship)) {
+                return $component;
+            }
+            $model = $model->{$relationship}()->getRelated();
+        }
+
+        $cast = explode(':', $model->getCasts()[$attribute] ?? '')[0];
+        $label = Str::headline($attribute);
+        if (in_array($cast, ['datetime', 'immutable_datetime'], true)) {
+            $timezone = config('lakbay.timezone');
+
+            return $component->label($label.' ('.$timezone.')')->dateTime('d M Y, H:i', timezone: $timezone);
+        }
+        if (in_array($cast, ['date', 'immutable_date'], true)) {
+            return $component->label($label)->date('d M Y', timezone: 'UTC');
+        }
+        if ($cast === 'boolean') {
+            return $component->label($label)->formatStateUsing(fn (?bool $state): ?string => $state === null ? null : ($state ? 'Yes' : 'No'));
+        }
+
+        return str_starts_with($field, 'latestVersion.') ? $component->label($label) : $component;
     }
 }

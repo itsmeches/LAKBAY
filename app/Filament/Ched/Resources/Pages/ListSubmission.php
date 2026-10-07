@@ -3,17 +3,9 @@
 namespace App\Filament\Ched\Resources\Pages;
 
 use App\Filament\Ched\Resources\SubmissionResource;
-use App\Filament\Support\Definitions;
-use App\Models\Submission;
-use Filament\Actions\CreateAction;
-use Filament\Resources\Pages\ManageRecords;
+use Filament\Resources\Pages\ListRecords;
 
-class ListSubmission extends ManageRecords
+class ListSubmission extends ListRecords
 {
     protected static string $resource = SubmissionResource::class;
-
-    protected function getHeaderActions(): array
-    {
-        return [CreateAction::make()->using(fn (array $data) => Definitions::create(Submission::class, $data))];
-    }
 }

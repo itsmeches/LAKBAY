@@ -14,7 +14,7 @@ class Calendar extends Model
 
     protected function casts(): array
     {
-        return ['effective_on' => 'immutable_date'];
+        return ['effective_on' => 'immutable_date', 'annex_b' => 'array'];
     }
 
     public function institution(): BelongsTo

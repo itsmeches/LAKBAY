@@ -7,7 +7,7 @@ use App\Models\PolicyVersion;
 
 class RequirementResolver
 {
-    public const PREDICATES = ['always', 'has_student_costs', 'requires_accommodation', 'external_invitation', 'higher_risk'];
+    public const PREDICATES = ['always', 'has_student_costs', 'requires_accommodation', 'external_invitation', 'higher_risk', 'venue_accreditation', 'medical_risk', 'has_incident', 'has_changes'];
 
     public function applies(string $predicate, array $conditions): bool
     {
@@ -15,6 +15,10 @@ class RequirementResolver
             'always' => true,'has_student_costs' => (bool) ($conditions['has_student_costs'] ?? false),
             'requires_accommodation' => (bool) ($conditions['requires_accommodation'] ?? false),
             'external_invitation' => (bool) ($conditions['external_invitation'] ?? false),
+            'venue_accreditation' => (bool) (($conditions['requires_accommodation'] ?? false) || ($conditions['venue_requires_accreditation'] ?? false)),
+            'medical_risk' => (bool) (($conditions['strenuous'] ?? false) || ($conditions['medical_clearance_relevant'] ?? false) || ($conditions['hazardous_destination'] ?? false)),
+            'has_incident' => (bool) ($conditions['has_incident'] ?? false),
+            'has_changes' => (bool) ($conditions['has_changes'] ?? false),
             'higher_risk' => (bool) (($conditions['strenuous'] ?? false) || ($conditions['vulnerable_participants'] ?? false) || ($conditions['hazardous_destination'] ?? false)),
             default => throw new \InvalidArgumentException('Unknown applicability predicate.')
         };
@@ -34,8 +38,10 @@ class RequirementResolver
         return 3;
     }
 
-    public function resolve(ActivityVersion $activity, PolicyVersion $policy)
+    public function resolve(ActivityVersion $activity, PolicyVersion $policy, ?string $stage = null)
     {
-        return $policy->requirements()->with('requirementDefinition')->where('category', $activity->requirement_category)->get()->filter(fn ($rule) => $this->applies($rule->predicate, $activity->conditions));
+        return $policy->requirements()->with('requirementDefinition')->where('category', $activity->requirement_category)
+            ->when($stage && PolicyRules::isCmo($policy), fn ($query) => $query->where('stage', $stage))
+            ->get()->filter(fn ($rule) => $this->applies($rule->predicate, $activity->conditions));
     }
 }

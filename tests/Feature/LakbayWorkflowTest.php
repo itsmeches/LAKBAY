@@ -23,6 +23,7 @@ use App\Filament\Ched\Pages\PolicyConfiguration;
 use App\Filament\Ched\Resources\Pages\ListSubmission;
 use App\Filament\Ched\Resources\Pages\ViewSubmission;
 use App\Filament\Hei\Resources\Pages\EditActivity;
+use App\Filament\Hei\Resources\Pages\ListAcademicPeriod;
 use App\Filament\Hei\Resources\Pages\ListActivity;
 use App\Filament\Hei\Resources\Pages\ListCalendar;
 use App\Filament\Hei\Resources\Pages\ListDocument;
@@ -104,6 +105,46 @@ class LakbayWorkflowTest extends TestCase
         $p = AcademicPeriod::create(['institution_id' => $this->institution->id, 'label' => 'AY 2026', 'starts_on' => '2026-11-01', 'ends_on' => '2027-10-31']);
         $this->calendar = Calendar::create(['institution_id' => $this->institution->id, 'academic_period_id' => $p->id, 'title' => 'Annual CLOCA', 'responsible_office' => 'Student Affairs', 'created_by' => $this->hei->id]);
         $this->activity = app(SaveActivity::class)->execute($this->hei, $this->data());
+    }
+
+    public function test_activity_timestamps_render_in_manila_without_changing_versions(): void
+    {
+        Filament::setCurrentPanel(Filament::getPanel('hei'));
+        $this->actingAs($this->hei);
+        $before = $this->activity->latestVersion->getRawOriginal();
+        Livewire::test(ListActivity::class)
+            ->assertTableColumnFormattedStateSet('latestVersion.starts_at', '10 Dec 2026, 09:00', $this->activity)
+            ->assertSee('Starts At (Asia/Manila)')
+            ->assertSee('Category');
+        Livewire::test(ViewActivity::class, ['record' => $this->activity->getRouteKey()])
+            ->assertSee('10 Dec 2026, 09:00');
+        $this->assertSame($before, $this->activity->latestVersion->fresh()->getRawOriginal());
+    }
+
+    public function test_submission_timestamp_and_boolean_display_preserve_snapshot(): void
+    {
+        $submission = $this->submit()->fresh();
+        Filament::setCurrentPanel(Filament::getPanel('hei'));
+        $this->actingAs($this->hei);
+        $before = $submission->getRawOriginal();
+        $expected = $submission->submitted_at->setTimezone('Asia/Manila')->format('d M Y, H:i');
+        Livewire::test(\App\Filament\Hei\Resources\Pages\ListSubmission::class)
+            ->assertTableColumnFormattedStateSet('submitted_at', $expected, $submission)
+            ->assertTableColumnFormattedStateSet('is_late', $submission->is_late ? 'Yes' : 'No', $submission);
+        Livewire::test(\App\Filament\Hei\Resources\Pages\ViewSubmission::class, ['record' => $submission->getRouteKey()])
+            ->assertSee($expected)
+            ->assertSee('Submitted At (Asia/Manila)');
+        $this->assertSame($before, $submission->fresh()->getRawOriginal());
+    }
+
+    public function test_date_only_fields_keep_their_calendar_date(): void
+    {
+        Filament::setCurrentPanel(Filament::getPanel('hei'));
+        $this->actingAs($this->hei);
+        $period = $this->calendar->academicPeriod;
+        Livewire::test(ListAcademicPeriod::class)
+            ->assertTableColumnFormattedStateSet('starts_on', '01 Nov 2026', $period);
+        $this->assertSame('2026-11-01', $period->fresh()->starts_on->format('Y-m-d'));
     }
 
     private function data(): array
@@ -340,6 +381,7 @@ class LakbayWorkflowTest extends TestCase
 
     public function test_reconsideration_is_limited_to_one_per_denial(): void
     {
+        $this->travelTo(CarbonImmutable::parse('2026-10-12 10:00', 'Asia/Manila'));
         $u = $this->staff('ched_case_officer');
         $c = CaseRecord::create(['institution_id' => $this->institution->id, 'jurisdiction_region_id' => $this->institution->region_id, 'reference' => 'CASE-1', 'type' => 'investigation', 'summary' => 'Restricted', 'status' => 'investigating', 'opened_at' => now(), 'created_by' => $u->id]);
         $r = ClearanceRequest::create(['institution_id' => $this->institution->id, 'activity_version_id' => $this->activity->latestVersion->id, 'case_record_id' => $c->id, 'justification' => 'Grounds', 'created_by' => $u->id]);
@@ -532,6 +574,7 @@ class LakbayWorkflowTest extends TestCase
 
     public function test_final_reconsideration_decision_preserves_denial_and_clears_exact_version(): void
     {
+        $this->travelTo(CarbonImmutable::parse('2026-10-12 10:00', 'Asia/Manila'));
         $u = $this->staff('ched_case_officer');
         $c = CaseRecord::create(['institution_id' => $this->institution->id, 'jurisdiction_region_id' => $this->institution->region_id, 'reference' => 'CASE-FINAL', 'type' => 'investigation', 'summary' => 'Restricted', 'status' => 'investigating', 'opened_at' => now(), 'created_by' => $u->id]);
         $r = ClearanceRequest::create(['institution_id' => $this->institution->id, 'activity_version_id' => $this->activity->latestVersion->id, 'case_record_id' => $c->id, 'justification' => 'Grounds', 'created_by' => $u->id]);
