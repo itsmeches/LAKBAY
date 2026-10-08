@@ -2,6 +2,68 @@
 
 This guide describes the inspected LAKBAY repository on 7 October 2026. It is a testing document, not CHED policy approval. Use fictional records in the isolated local demo. Record your own results; automated coverage does not mean a browser test has passed.
 
+## Executed QA campaign: 8 October 2026
+
+Campaign `QA-CAMPAIGN-20261008` ran against the isolated `database/qa-demo.sqlite` database, private QA storage and `http://127.0.0.1:8001`. The normal application database was not used. All campaign people and institutions are fictional. Mail used local logging; no external recipient was contacted. CMO 24 remains **candidate**, with no publication date or reference invented.
+
+### Verified results
+
+The initial clean PHPUnit baseline passed **375 tests / 1,779 assertions**. The final full run after all fixes passed **381 tests / 1,824 assertions** (288 seconds).
+
+- Chromium: the final complete run passed **34 browser scenarios** (4.9 minutes), including draft editing, preserved submitted copies and actual scanner failure/recovery. No final browser scenario failed or was skipped.
+- PHPStan: **zero errors**. Pint formatted the changed PHP files. The Vite production asset build passed; its optional `fontaine` fallback warning does not stop the build.
+- Security/staging follow-up: clean npm installation/audit, quoting and concurrently smoke checks, the build, six affected fixture tests (**33 assertions**), PHPStan/Pint and one public-page Chromium smoke check passed. YAML syntax and the PostgreSQL test-group selection were checked; **375 tests are eligible for PostgreSQL**, but were not executed against PostgreSQL on this machine. Browser HTML reports show the latest run; the full campaign totals above refer to the earlier verified 34-scenario run.
+- PDFs: all **12 Annex B–M outputs** downloaded through authenticated requests, contained fictional field values and were rendered and visually inspected. B/C/E/G/H/I/J/K/L used one A4 page; F/M used two. D used two pages with populated remarks, continuing without losing its final criteria or signatures. Prepared documents and uploaded signed originals remain distinct.
+- Real scanning: the browser uploaded a PNG, observed pending quarantine, ran the actual queue worker with local ClamAV, then retrieved the authorized image preview after a clean scan. No database flag was manually changed to clean.
+- Recovery: the pre-campaign SQLite backup was restored to a separate ignored file and passed `integrity_check`. The active QA database also passed. Original rows checked include 20 users, 4 institutions, 2 policy versions, 25 templates, 23 documents, 16 activity versions, 4 submissions and existing completion/incident reports. The broader comparison checked **522 original rows across 55 ID-bearing tables**, excluding infrastructure queues/caches/sessions. **No checked original row changed. All 48 backed-up private files retained their hashes.** This is a SQLite/database-and-file recovery check, not a production PostgreSQL or encryption-key disaster-recovery exercise.
+
+### Defects and retests
+
+| ID / severity | Role and reproduction | Expected / actual before fix | Fix and retest |
+| --- | --- | --- | --- |
+| QA-01 / High | CHED records officer opens Document library; monitor opens Technical assistance; case officer opens Case records. | Authorized role can create; Filament's generic create-policy response hid the forms despite the resource's permission check. | Shared `ScopedResource` now supplies the permission-and-panel authorization response. Mounted-form tests pass for all three roles; analyst, unverified, inactive, missing-region and non-confidential administrator cases remain denied. |
+| QA-02 / High | HEI opens a calendar, chooses Submit/resubmit, selects CMO 24 and attaches the displayed evidence files. | Selections reach submission; dynamic document/retention fields were absent from Livewire state and visually selected files were dropped. | Changing policy initializes the keyed evidence schema. Browser resubmission created revision 2, superseding the correction request; initialization regression passes. |
+| QA-03 / Medium | Submit an otherwise populated package without required evidence. | A visible explanation; domain errors used keys outside the mounted form and the modal silently remained open. | Domain validation is mapped into a visible submission-check message. Regression verifies the error and no partial submission. |
+| QA-04 / High | Upload a fictional PNG, run a QA worker with a missing scanner executable on Windows. | Execution failure stays pending and retryable; Windows exit code 1 was mistaken for a positive infection. | An infection now requires exit code 1 **and** ClamAV's `FOUND` result. Missing/unavailable scanners and hash mismatches remain quarantined; five focused failure cases pass. The final browser run verifies pending/private state after failure and preview after a genuine successful retry. The deliberately misclassified pre-fix campaign upload remains private as diagnostic evidence. |
+
+The pre-existing Annex M detail-page print-action change was preserved and exercised through the monitor's real creation form, saved record and two-page PDF.
+
+### Coverage and limits
+
+| Planned area | Recorded outcome |
+| --- | --- |
+| Public site / anonymous retrieval | Browser passes for home, guidelines, FAQ and anonymous protected-document redirect; template/private access regressions pass. |
+| Identity and roles | Real MFA enrollment/login used for campaign accounts. Browser checks HEI preparer/submitter and all seven existing CHED roles. Visible sidebar destinations return HTTP 200. Inactive/unverified, foreign-panel and invitation rules have PHPUnit coverage; full browser invitation acceptance/password-reset journeys remain unverified. |
+| Fictional scenarios / classification | Existing demo covers SUC, LUC, private and another region; campaign adds independently identified accounts and Category 1 calendar/activity/report records. Category 2/3 treatment, costs, invitations, travel and PIC boundaries pass domain tests. A complete Category 2/3 browser filing lifecycle remains a pilot task. |
+| Annual / pre-activity submission | Separate stage, category matrix, retained/requested evidence, signatures, contracts and snapshot tests pass. Initial campaign intake was seeded through the shared Action; **correction, revised intake, completeness review and signed Annex K recording were exercised in the browser**. |
+| Annex preparation / outputs | B–M authenticated HTML/PDF checks pass. M's real form fills all 14 checks and saves/prints. B/C/F browser edits preserve submitted preparations. D/E/J and G/H/I field validation, long-content pagination and snapshot behavior have template-specific PHPUnit coverage; not every editor interaction was repeated in Chromium. A/N are reference material. |
+| Reports | Browser files a signed ROC, initial incident notice and immediate change notice, then verifies preparation editing/duplicate filing actions disappear. Signed incident filings, supplements, incident links, actual conclusion reconciliation, personnel/itinerary changes and late intake have domain regressions. The independent dummy ROC/incident examples are not an assertion that HEI narratives agree. |
+| Deadlines / policy | July history, 48-hour incident boundaries, 72-hour completion, working days, publication transition/effectivity and unresolved RCD anchor regressions pass. No policy interpretation was resolved by the QA campaign. |
+| Monitoring / corrective follow-up | Browser M creation/output passes. Technical assistance, corrective response-before-closure, criteria validation and regional authorization regressions pass. Full corrective follow-up browser journey remains unverified. |
+| Cases / clearance | Complaint/order requirements, confidentiality, routing, advance filing and one receipt-based reconsideration regressions pass. Case navigation is checked; complete external clearance/case browser journeys remain unverified. |
+| Isolation / quarantine | Other HEI is denied all campaign B–J preparation/output URLs. Ownership/jurisdiction, selectors, exports, restricted cases and unauthorized actions pass regression tests. Genuine upload/scan/preview passes; controlled worker/scanner failure and retry are tested separately. |
+| Reports / exports / notifications | Frozen regional reports, no revision double-counting, dispatch/receipt, authorization on export execution and reminder deduplication regressions pass. Actual live CSV/PDF export queue and all notification failure/retry journeys remain unverified. |
+| Concurrency / rollback | Duplicate/stale actions, evidence failures and no partial records pass SQLite tests. PostgreSQL concurrency/deadlocks and multi-user load are unverified. |
+| Responsive / keyboard | Desktop panels and a 390-pixel public viewport with keyboard focus pass browser checks. Full mobile panel walkthrough, screen-reader/WCAG audit and multiple-browser coverage remain unverified. |
+| Network / operational failures | Scanner failure exercised locally. Browser offline/interrupted uploads, expired-session recovery and database outage drills remain unverified. |
+| PostgreSQL / containers | **Blocked:** `psql` and Docker are absent from PATH and checked standard installation locations. The follow-up prepares a separate loopback-only PostgreSQL 17 staging service on port 5433, independent storage and environment example; YAML syntax passes. See the staging section in `docs/deployment.md`. The six SQLite-only demo tests are excluded only from the PostgreSQL CI job. No infrastructure was installed; PostgreSQL migration, workflow, container and restore results are not claimed. |
+| Dependency review | The campaign initially reported two critical **development-tooling** advisories through `concurrently` / `shell-quote` (GHSA-pqg4-j6r4-53mv). The approved follow-up pins the nested `shell-quote` to patched 1.11.0 while retaining concurrently 10. A new npm audit reports **zero vulnerabilities**; the asset build passes. `npm audit fix --force` was not used. Production dependency/host scanning remains a rollout check. |
+
+### Repeat the campaign safely
+
+1. Use the existing isolated `.env.local` setup from this guide, and back up `database/qa-demo.sqlite` plus its private storage before adding fixtures. Do not run fresh/reset migrations or reseed the normal database.
+2. For a new isolated demo, prepare and **genuinely scan** the existing QA fixtures first. Then run `php artisan db:seed --env=local --class=QaCampaignSeeder --no-interaction`. The seeder refuses normal/production databases and does not overwrite existing account passwords. It requires the existing `QA-SUC` demo institution and clean required evidence.
+3. Start `php artisan serve --env=local --host=127.0.0.1 --port=8001 --no-interaction`. Use `npm ci`, then `npx playwright install chromium` if the approved development browser is absent. Run `npm run test:browser`. On this workstation Node/PHP portable-tool directories must be on PATH, or set `QA_PHP` to the portable PHP executable.
+4. Campaign passwords and enrolled authenticator secrets are in **ignored local** `storage/app/qa-demo/app/qa-campaign/manifest.json`. Use the HEI or CHED account matching the role; retain MFA. Never copy this file, auth cookies, traces, QR/secret material or uploaded evidence into Git or shared reports.
+5. Manually verify QA-01: sign in as `campaign.records@example.test`, `campaign.monitor@example.test` or `campaign.case@example.test`; the permitted creation forms should open. Sign in as analyst to confirm the corresponding creation actions are absent.
+6. Manually verify QA-02/03: on a **new correction request**, open the HEI calendar's Submit/resubmit form, select the same policy and request, then choose files for each requirement. Submit without a required file first: a red explanation should appear and no new revision should exist. Supply the missing file and submit: CHED must see the new revision and the original must remain superseded with unchanged preserved outputs.
+7. For Annex K, reviewer marks the revised package complete; signatory prepares/prints the letter, attaches an already scanned fictional signed acknowledgment and records it. HEI sees Signed acknowledgment and the preserved preparation. This does not authorize the activity.
+8. For Annex M, monitor creates a new record with 14 checks and findings, saves it, then uses Preview/print monitoring. Inspect both pages and optional blank signatures. Use the matching HEI report preparations for ROC/initial incident/immediate change filing; after filing, preparation edit/file actions disappear.
+
+Browser reruns **reuse completed immutable campaign transitions** rather than reopening or overwriting signed history. They still create fresh monitoring records and uploads. To repeat the complete transition sequence from its initial state, use another backed-up isolated QA database/campaign; do not reset the live campaign's submitted records. Browser artifacts, PDFs, screenshots, queue output and the recovery report live under ignored `storage/app/qa-campaign-browser/`; the HTML report is `report/index.html`. Backups are under ignored `storage/app/backups/qa-campaign-20261008/`.
+
+This is a verified development QA pass with explicit remaining pilot checks. It is **not a guarantee of every possible bug, complete regulatory coverage or production readiness**.
+
 ## 1. What you are testing
 
 ### Annex M walkthrough
@@ -337,7 +399,7 @@ The modal supplies the applicable rows. Several rows legitimately reuse qa-certi
 
 ### HEI-07 — Missing evidence, duplicate submission and locked history
 
-Role: private.official. On a fresh unsubmitted plan/package, omit SAA or the supporting first-aid file and submit. Expected: specific completeness rejection; no submission. Complete evidence and submit; immediately submit the same version/stage again without a correction request. Expected: duplicate blocked. View Submissions & letters → Historical submission snapshot; note original venue and version. Revise the activity's venue, save and revisit old submission: original snapshot remains unchanged. Existing plan may be revised; submitted historical records cannot be edited. Use calendar/activity Submit / resubmit; do not use the misleading New submission button (known defect). Actual: ____ Status: ____ Notes: ____
+Role: private.official. On a fresh Category 2 or escalated Category 3 plan/package, omit SAA or the supporting first-aid file and submit. Expected: specific completeness rejection; no submission. Ordinary Category 3 does not require SAA. Complete evidence and submit; immediately submit the same version/stage again without a correction request. Expected: duplicate blocked. View Submissions & letters → Historical submission snapshot; note original venue and version. Revise the activity's venue, save and revisit old submission: original snapshot remains unchanged. Existing plan may be revised; submitted historical records cannot be edited. Use calendar/activity Submit / resubmit; do not use the misleading New submission button (known defect). Actual: ____ Status: ____ Notes: ____
 
 ### HEI-08 — Category 2 and ordinary Category 3 requirements
 

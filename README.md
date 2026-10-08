@@ -304,7 +304,23 @@ See [architecture](docs/architecture.md), [deployment and backups](docs/deployme
 
 Production needs HTTPS, APP_DEBUG=false, PostgreSQL, approved mail/storage/hosting, supervised workers, Laravel scheduler, current signatures, backups, and tested restoration. Docker configuration is provided but has not been verified on this workstation.
 
+## QA verification
+
+The 8 October 2026 QA campaign adds repeatable fictional fixtures and Chromium browser coverage. See the [executed results, defects and remaining checks](docs/UAT-guide.md#executed-qa-campaign-8-october-2026) before judging rollout readiness. Browser tests use **only the isolated QA server at port 8001**:
+
+```powershell
+php artisan db:seed --env=local --class=QaCampaignSeeder --no-interaction
+php artisan serve --env=local --host=127.0.0.1 --port=8001 --no-interaction
+# In another terminal, with Node/PHP on PATH:
+npx playwright install chromium
+npm run test:browser
+```
+
+Back up the QA database/private storage first. The campaign seeder requires the existing demo institution and genuinely scanned fixtures; it refuses the normal database. Random credentials and real MFA enrollment state remain in ignored QA storage. Browser artifacts stay under `storage/app/qa-campaign-browser/`. Reruns preserve completed submission/report history, so use another isolated copy to repeat the initial lifecycle.
+
 ## Known limits
+
+Security/staging follow-up on **8 October 2026**: a scoped npm override pins concurrently's nested `shell-quote` to patched 1.11.0. Clean `npm ci`, npm audit (**zero vulnerabilities**), command-runner/quoting checks and the asset build pass. CI now runs npm audit and excludes the six deliberately SQLite-only demo tests from its PostgreSQL job; the SQLite job retains them. See [isolated PostgreSQL staging setup](docs/deployment.md#isolated-postgresql-staging-preparation-8-october-2026). Configuration syntax was checked locally; Docker/PostgreSQL execution remains blocked by missing tooling.
 
 - Internal HEI consultation, approvals, signing, and notarization happen externally; the app prepares Annex D/E assessments and records separately signed evidence.
 - Central Office/national consolidation, public complaint intake, student/guardian portals, spreadsheet import, mobile clients, and digital signing are deferred.
@@ -312,7 +328,7 @@ Production needs HTTPS, APP_DEBUG=false, PostgreSQL, approved mail/storage/hosti
 - Publication, Category 3 timing, SAA coverage, holidays, receipt rules, evidence applicability, retention and approved template variants require confirmation.
 - Student totals are estimated participations, not unique students.
 - No automatic official-record purge is enabled.
-- Browser/accessibility UAT, load tests, PostgreSQL concurrency, container execution, and recovery verification remain rollout gates.
+- Full browser/accessibility UAT, load tests, PostgreSQL concurrency, container execution, and production recovery verification remain rollout gates. Local Chromium and SQLite/file recovery results are documented separately.
 
 ## Repository hygiene
 

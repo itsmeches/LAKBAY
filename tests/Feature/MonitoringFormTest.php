@@ -3,9 +3,10 @@
 namespace Tests\Feature;
 
 use App\Actions\Operations\RecordOperationalRecord;
-use App\Filament\Ched\Resources\Pages\ListMonitoringRecord;
-use App\Filament\Ched\Resources\Pages\CreateMonitoringRecord;
 use App\Filament\Ched\Resources\MonitoringRecordResource;
+use App\Filament\Ched\Resources\Pages\CreateMonitoringRecord;
+use App\Filament\Ched\Resources\Pages\ListMonitoringRecord;
+use App\Filament\Ched\Resources\Pages\ViewMonitoringRecord;
 use App\Models\Institution;
 use App\Models\MonitoringRecord;
 use App\Models\Region;
@@ -98,6 +99,20 @@ class MonitoringFormTest extends TestCase
             $this->assertStringContainsString($label, $html);
         }
         $this->assertCount(14, $component->get('data.items'));
+    }
+
+    public function test_record_page_exposes_preview_for_preserved_annex_m_only(): void
+    {
+        $record = $this->record();
+        Livewire::test(ViewMonitoringRecord::class, ['record' => $record->getRouteKey()])
+            ->assertActionVisible('monitoring_print')
+            ->assertActionHasUrl('monitoring_print', route('monitoring.print', $record));
+
+        $data = $this->data();
+        unset($data['items'], $data['annex_metadata']);
+        $legacy = MonitoringRecord::create($data + ['monitored_by' => $this->staff->id]);
+        Livewire::test(ViewMonitoringRecord::class, ['record' => $legacy->getRouteKey()])
+            ->assertActionHidden('monitoring_print');
     }
 
     public function test_later_profile_staff_and_configuration_changes_do_not_change_preserved_output(): void

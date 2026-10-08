@@ -453,6 +453,36 @@ class LakbayWorkflowTest extends TestCase
         $this->assertSame('corrections_requested', $submission->fresh()->status);
     }
 
+    public function test_submission_domain_errors_are_visible_in_the_actual_modal(): void
+    {
+        $this->actingAs($this->hei);
+        Filament::setCurrentPanel(Filament::getPanel('hei'));
+        $policy = PolicyVersion::first();
+        $evidence = [];
+        foreach (app(RequirementResolver::class)->resolve($this->activity->latestVersion, $policy) as $rule) {
+            $evidence[$rule->id] = ['status' => $rule->evidence_mode, 'reason' => 'Test retention reference'];
+        }
+        Livewire::test(ViewActivity::class, ['record' => $this->activity->id])
+            ->callAction('submit', data: ['policy_id' => $policy->id, 'evidence' => $evidence])
+            ->assertHasActionErrors(['submission']);
+        $this->assertDatabaseCount('submissions', 0);
+    }
+
+    public function test_selecting_a_policy_initializes_dynamic_evidence_fields(): void
+    {
+        $this->actingAs($this->hei);
+        Filament::setCurrentPanel(Filament::getPanel('hei'));
+        $component = Livewire::test(ViewActivity::class, ['record' => $this->activity->id])
+            ->mountAction('submit')
+            ->set('mountedActions.0.data.policy_id', PolicyVersion::first()->id);
+        $evidence = $component->get('mountedActions.0.data.evidence');
+        $this->assertNotEmpty($evidence);
+        foreach ($evidence as $item) {
+            $this->assertArrayHasKey('document_ids', $item);
+            $this->assertArrayHasKey('reason', $item);
+        }
+    }
+
     public function test_panel_routes_render(): void
     {
         $this->get('/hei/login')->assertOk();
@@ -791,20 +821,21 @@ class LakbayWorkflowTest extends TestCase
     public static function scannerFailures(): array
     {
         return [
-            'scanner missing' => ['', 0, false, 'pending', true],
-            'infected file' => ['fake-scanner', 1, false, 'infected', false],
-            'scanner unavailable' => ['fake-scanner', 2, false, 'pending', true],
-            'file tampered after upload' => ['fake-scanner', 0, true, 'pending', true],
+            'scanner missing' => ['', 0, false, 'pending', true, ''],
+            'infected file' => ['fake-scanner', 1, false, 'infected', false, 'file.pdf: Eicar-Test-Signature FOUND'],
+            'missing executable returns one on Windows' => ['missing-scanner.exe', 1, false, 'pending', true, ''],
+            'scanner unavailable' => ['fake-scanner', 2, false, 'pending', true, ''],
+            'file tampered after upload' => ['fake-scanner', 0, true, 'pending', true, ''],
         ];
     }
 
     #[DataProvider('scannerFailures')]
-    public function test_scanner_failure_paths_never_release_quarantine(string $command, int $exitCode, bool $tamper, string $status, bool $throws): void
+    public function test_scanner_failure_paths_never_release_quarantine(string $command, int $exitCode, bool $tamper, string $status, bool $throws, string $output): void
     {
         $document = $this->document('cloca');
         $document->update(['scan_status' => 'pending']);
         config(['lakbay.scanner_command' => $command]);
-        Process::fake(['*' => Process::result(exitCode: $exitCode)]);
+        Process::fake(['*' => Process::result(output: $output, exitCode: $exitCode)]);
         if ($tamper) {
             Storage::disk('private')->put($document->path, 'Changed contents');
         }

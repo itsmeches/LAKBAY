@@ -7,6 +7,7 @@ use App\Models\Institution;
 use App\Services\Access;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\ViewAction;
+use Filament\Facades\Filament;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
@@ -15,6 +16,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
@@ -82,7 +84,17 @@ abstract class ScopedResource extends Resource
 
     public static function canCreate(): bool
     {
-        return static::$createPermission && auth()->user()?->can(static::$createPermission);
+        return static::getCreateAuthorizationResponse()->allowed();
+    }
+
+    public static function getCreateAuthorizationResponse(): Response
+    {
+        $user = auth()->user();
+        $panel = Filament::getCurrentPanel();
+
+        return static::$createPermission && $user && $panel
+            && $user->can(static::$createPermission) && $user->canAccessPanel($panel)
+            ? Response::allow() : Response::deny();
     }
 
     public static function isGloballySearchable(): bool

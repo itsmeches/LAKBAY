@@ -40,7 +40,7 @@ class ScanDocument implements ShouldQueue
             if (hash_file('sha256', Storage::disk($d->disk)->path($d->path)) !== $d->sha256) {
                 throw new \RuntimeException('Document hash mismatch.');
             }$d->update(['scan_status' => 'clean']);
-        } elseif ($result->exitCode() === 1) {
+        } elseif ($result->exitCode() === 1 && preg_match('/:\s+[^\r\n]+\s+FOUND\s*$/m', $result->output()) === 1) {
             $d->update(['scan_status' => 'infected']);
         } else {
             throw new \RuntimeException('Malware scanner failed. Document remains quarantined.');

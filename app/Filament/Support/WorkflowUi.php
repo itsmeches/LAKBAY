@@ -376,6 +376,8 @@ class WorkflowUi
     private static function submitAction(): Action
     {
         return Action::make('submit')->label('Submit / resubmit')->visible(fn () => auth()->user()->can('submissions.submit'))->modalHeading('Submit compliance package')->schema(fn ($record) => [
+            Text::make(fn ($livewire) => $livewire->getErrorBag()->first('mountedActions.'.$livewire->getMountedAction()->getNestingIndex().'.data.submission'))
+                ->color('danger'),
             Text::make($record instanceof Calendar ? 'CMO 24: annual calendar package. Submit later pre-activity evidence from each activity.' : 'CMO 24: pre-activity package. Category 1 requires a recorded annual calendar package first.'),
             Text::make('A frozen revision will be created. Documents selected here must cover every included activity. Late submissions are recorded and flagged.'),
             Select::make('policy_id')->options(fn () => PolicyVersion::query()->when(! (app()->environment(['local', 'testing']) && config('lakbay.allow_draft_policy')), fn ($q) => $q->where('status', 'confirmed'))->pluck('title', 'id'))->required()->live(),
@@ -387,15 +389,19 @@ class WorkflowUi
                 ->options(fn () => AccountabilityAffidavit::where('institution_id', $record->institution_id)->where('academic_period_id', $record->academic_period_id)->pluck('title', 'id'))
                 ->helperText('Select the draft used for the signed SAA covering this package. This preserves printable data; it does not replace the signed/notarized evidence upload.'),
             Group::make()->schema(fn (Get $get) => self::evidenceSchema($record, $get('policy_id') ? (int) $get('policy_id') : null)),
-        ])->action(function ($record, array $data) {
+        ])->action(function ($record, array $data, Action $action) {
             $evidence = [];
             foreach (self::versions($record) as $v) {
                 $evidence[$v->id] = $data['evidence'] ?? [];
             }
-            if ($record instanceof Calendar) {
-                $s = app(SubmitCalendar::class)->execute(auth()->user(), $record, (int) $data['policy_id'], $evidence, empty($data['previous_id']) ? null : (int) $data['previous_id'], empty($data['saa_draft_id']) ? null : (int) $data['saa_draft_id'], empty($data['certification_draft_id']) ? null : (int) $data['certification_draft_id']);
-            } else {
-                $s = app(SubmitActivity::class)->execute(auth()->user(), [$record->id], (int) $data['policy_id'], $evidence, null, empty($data['previous_id']) ? null : (int) $data['previous_id'], saaDraftId: empty($data['saa_draft_id']) ? null : (int) $data['saa_draft_id'], certificationDraftId: empty($data['certification_draft_id']) ? null : (int) $data['certification_draft_id']);
+            try {
+                if ($record instanceof Calendar) {
+                    $s = app(SubmitCalendar::class)->execute(auth()->user(), $record, (int) $data['policy_id'], $evidence, empty($data['previous_id']) ? null : (int) $data['previous_id'], empty($data['saa_draft_id']) ? null : (int) $data['saa_draft_id'], empty($data['certification_draft_id']) ? null : (int) $data['certification_draft_id']);
+                } else {
+                    $s = app(SubmitActivity::class)->execute(auth()->user(), [$record->id], (int) $data['policy_id'], $evidence, null, empty($data['previous_id']) ? null : (int) $data['previous_id'], saaDraftId: empty($data['saa_draft_id']) ? null : (int) $data['saa_draft_id'], certificationDraftId: empty($data['certification_draft_id']) ? null : (int) $data['certification_draft_id']);
+                }
+            } catch (ValidationException $exception) {
+                throw ValidationException::withMessages(['mountedActions.'.$action->getNestingIndex().'.data.submission' => collect($exception->errors())->flatten()->implode(' ')]);
             }
             Notification::make()->title('Recorded '.$s->reference)->success()->send();
         });

@@ -33,7 +33,7 @@ jobs:
       - run: composer install --no-interaction --prefer-dist
       - run: cp .env.example .env
       - run: php artisan key:generate
-      - run: php artisan test
+      - run: php artisan test ${{ matrix.database == 'pgsql' && '--exclude-group=sqlite-demo' || '' }}
       - run: php vendor/bin/phpstan analyse --memory-limit=512M
       - run: php vendor/bin/pint --test
       - run: composer audit
@@ -42,4 +42,5 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --ignore-scripts
+      - run: npm audit
       - run: npm run build
