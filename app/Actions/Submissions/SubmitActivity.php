@@ -7,6 +7,7 @@ use App\Models\AccountabilityAffidavit;
 use App\Models\Activity;
 use App\Models\Calendar;
 use App\Models\CertificationDraft;
+use App\Models\ClassificationAssessment;
 use App\Models\Document;
 use App\Models\PolicyVersion;
 use App\Models\Submission;
@@ -25,6 +26,7 @@ use App\Services\Reporting\ItineraryBuilder;
 use App\Services\Reporting\RacpBuilder;
 use App\Services\Reporting\SaaBuilder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -86,12 +88,21 @@ class SubmitActivity
             $dates = [];
             $resolver = app(RequirementResolver::class);
             foreach ($versions as $v) {
+                $assessment = Schema::hasTable('classification_assessments') ? ClassificationAssessment::where('activity_version_id', $v->id)->latest('id')->first() : null;
+                if ($assessment) {
+                    if ($assessment->state !== 'confirmed' || $assessment->confirmed_category !== $v->requirement_category || ($assessment->facts['policy_version_id'] ?? null) !== $policy->id) {
+                        throw ValidationException::withMessages(['classification' => 'Confirm this exact activity revision against the selected eligible policy before submission. Historical corrections retain their original baseline.']);
+                    }
+                    if ($calendar && $v->requirement_category !== 1) {
+                        throw ValidationException::withMessages(['classification' => 'A revised/new Category 2 treatment needs its pre-activity filing; do not replace the original annual calendar.']);
+                    }
+                }
                 if ($cmo) {
                     $issues = app(ActivityCompliance::class)->issues($v, $stage === 'pre_activity');
                     if ($issues) {
                         throw ValidationException::withMessages(['readiness' => implode(' ', $issues)]);
                     }
-                    if ($stage === 'pre_activity' && $v->category === 1 && ! Submission::where('calendar_id', $v->activity->calendar_id)
+                    if ($stage === 'pre_activity' && $v->category === 1 && (! $assessment || $v->requirement_category === 1) && ! Submission::where('calendar_id', $v->activity->calendar_id)
                         ->where('institution_id', $institutionId)->where('stage', 'annual_calendar')->whereIn('policy_version_id', app(PolicyRules::class)->compatibleAnnualBaselines($policy))
                         ->whereNotIn('status', ['superseded', 'withdrawn'])->whereHas('activityVersions', fn ($q) => $q->where('activity_versions.activity_id', $v->activity_id))->exists()) {
                         throw ValidationException::withMessages(['calendar' => 'Record the Category 1 annual calendar submission before its pre-activity evidence.']);
@@ -140,7 +151,11 @@ class SubmitActivity
                     $rows[] = ['activity_version_id' => $v->id, 'policy_requirement_id' => $rule->id, 'evidence_status' => $status, 'reason' => $item['reason'] ?? null, 'document_ids' => $ids, 'due_at' => $due,
                         'rule_snapshot' => $rule->toArray() + ['applicable' => true, 'deadline_resolved' => $due !== null]];
                 }
-                $snapshots[] = $v->toArray() + ['personnel' => $v->personnel->toArray(), 'itinerary' => $v->itineraryItems->toArray()];
+                $snapshot = $v->toArray() + ['personnel' => $v->personnel->toArray(), 'itinerary' => $v->itineraryItems->toArray()];
+                if ($assessment) {
+                    $snapshot['classification_assessment'] = $assessment->toArray();
+                }
+                $snapshots[] = $snapshot;
             }
             if (! $rows) {
                 throw ValidationException::withMessages(['policy' => 'No applicable requirements configured.']);

@@ -8,16 +8,20 @@ use App\Models\ActivityClassification;
 use App\Models\ActivityVersion;
 use App\Models\Calendar;
 use App\Models\Campus;
+use App\Models\ClassificationAssessment;
+use App\Models\ClassificationRuleSet;
 use App\Models\Document;
 use App\Models\User;
 use App\Services\Access;
 use App\Services\Audit;
+use App\Services\Compliance\ClassificationEvaluator;
 use App\Services\Compliance\DiagnosticPreparation;
 use App\Services\Compliance\ItineraryPreparation;
 use App\Services\Compliance\RacpPreparation;
 use App\Services\Compliance\RequirementResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -34,6 +38,15 @@ class SaveActivity
             'preparation' => 'sometimes|nullable|array', 'preparation.*' => 'nullable|string|max:2000',
             'diagnostic' => 'sometimes|nullable|array',
             'racp' => 'sometimes|nullable|array',
+            'classification' => 'sometimes|array:rule_set_id,expected_version_id,planned_on,regular_process_confirmed,student_supervision_reference,baseline_submission_id,approved_baseline_version_id,phase,conduct_reference,conduct_at,reason,confirm,contextual_choices',
+            'classification.conduct_at' => 'nullable|date|before_or_equal:now',
+            'classification.rule_set_id' => 'sometimes|required|integer|exists:classification_rule_sets,id',
+            'classification.expected_version_id' => 'nullable|integer', 'classification.planned_on' => 'nullable|date|before_or_equal:today',
+            'classification.regular_process_confirmed' => 'sometimes|boolean', 'classification.confirm' => 'sometimes|boolean',
+            'classification.student_supervision_reference' => 'nullable|string|max:2000', 'classification.conduct_reference' => 'nullable|string|max:2000',
+            'classification.reason' => 'nullable|string|max:4000', 'classification.phase' => 'sometimes|in:before,during,after',
+            'classification.baseline_submission_id' => 'nullable|integer', 'classification.approved_baseline_version_id' => 'nullable|integer',
+            'classification.contextual_choices' => 'sometimes|array', 'classification.contextual_choices.*' => 'required|string|max:100',
             'annex_j' => 'sometimes|nullable|array',
             'itinerary' => 'sometimes|nullable|array|max:200',
             'itinerary.*' => 'required|array:sequence,starts_at,description,location,locality,dot_accreditation,responsible_person',
@@ -78,6 +91,9 @@ class SaveActivity
         if ((int) $data['category'] === 3 && $data['initiator'] !== 'student') {
             throw ValidationException::withMessages(['category' => 'Category 3 requires a student-initiated activity.']);
         }
+        if (empty(trim($data['classification_reason'] ?? '')) && isset($data['classification']['reason'])) {
+            $data['classification_reason'] = $data['classification']['reason'];
+        }
         if ($activity && $activity->latestVersion->category !== (int) $data['category'] && empty(trim($data['classification_reason'] ?? ''))) {
             throw ValidationException::withMessages(['classification_reason' => 'Explain a change to the declared category.']);
         }
@@ -102,6 +118,20 @@ class SaveActivity
                 $activity = Activity::whereKey($activity->id)->lockForUpdate()->firstOrFail();
             } else {
                 $activity = Activity::create(['institution_id' => $data['institution_id'], 'academic_period_id' => $data['academic_period_id'], 'calendar_id' => $data['calendar_id'] ?? null, 'campus_id' => $data['campus_id'] ?? null, 'title' => $data['title'], 'public_id' => (string) Str::uuid(), 'created_by' => $actor->id]);
+            }
+            $previousVersion = $activity->versions()->latest('version')->first();
+            $previousAssessment = $previousVersion && Schema::hasTable('classification_assessments') ? ClassificationAssessment::where('activity_version_id', $previousVersion->id)->latest('id')->first() : null;
+            $classification = $data['classification'] ?? [];
+            $setId = $classification['rule_set_id'] ?? $previousAssessment?->classification_rule_set_id;
+            $set = $setId ? ClassificationRuleSet::findOrFail($setId) : null;
+            if ($set) {
+                abort_unless($actor->can('panel.hei') && app(Access::class)->owns($actor, $activity->institution_id), 403);
+                if ($previousVersion && (int) ($classification['expected_version_id'] ?? 0) !== $previousVersion->id) {
+                    throw ValidationException::withMessages(['classification.expected_version_id' => 'This plan changed. Reload the current revision before assessing it.']);
+                }
+                $classification = array_replace($previousAssessment?->facts['context'] ?? [], $classification);
+                $classification['confirm'] = (bool) ($data['classification']['confirm'] ?? false);
+                $classification['reason'] = $data['classification']['reason'] ?? '';
             }
             $category = app(RequirementResolver::class)->requirementCategory((int) $data['category'], $data['conditions']);
 
@@ -130,6 +160,15 @@ class SaveActivity
                     $fields[$key] = CarbonImmutable::parse($fields[$key], config('lakbay.timezone'))->utc();
                 }
             }
+            $evaluation = null;
+            if ($set) {
+                if ($previousVersion) {
+                    $fields += $previousVersion->only(['program', 'other_count', 'preparation', 'contracts', 'cloca', 'annex_j', 'departure_at', 'return_at']);
+                }
+                $facts = $fields + $activity->only(['institution_id', 'academic_period_id', 'calendar_id', 'campus_id']) + ['personnel' => $data['personnel'], 'itinerary' => $itinerary];
+                $evaluation = app(ClassificationEvaluator::class)->evaluate($activity, $facts, $set, $classification);
+                $category = $evaluation['recommended_category'];
+            }
             $version = ActivityVersion::create($fields + ['activity_id' => $activity->id, 'version' => ($activity->versions()->max('version') ?? 0) + 1, 'requirement_category' => $category, 'created_by' => $actor->id]);
             foreach ($data['personnel'] as $person) {
                 $version->personnel()->create(collect($person)->only(['role', 'name', 'position', 'contact', 'qualifications', 'first_aid_trained', 'hei_employed', 'accompanies_activity', 'first_aid_reference'])->all());
@@ -139,7 +178,10 @@ class SaveActivity
                 $item['starts_at'] = CarbonImmutable::parse($item['starts_at'], config('lakbay.timezone'))->utc();
                 $version->itineraryItems()->create($item);
             }
-            ActivityClassification::create(['activity_version_id' => $version->id, 'declared_category' => $data['category'], 'requirement_category' => $category, 'reason' => $data['classification_reason'] ?? ($category !== $data['category'] ? 'Category 3 circumstances require Category 2 evidence.' : 'Confirmed by preparer.'), 'confirmed_by' => $actor->id]);
+            ActivityClassification::create(['activity_version_id' => $version->id, 'declared_category' => $data['category'], 'requirement_category' => $category, 'reason' => $data['classification_reason'] ?? ($evaluation ? ($classification['reason'] ?: 'See versioned classification assessment; draft recommendation may await confirmation.') : ($category !== $data['category'] ? 'Category 3 circumstances require Category 2 evidence.' : 'Confirmed by preparer.')), 'confirmed_by' => $actor->id]);
+            if ($set && $evaluation) {
+                app(RecordClassificationAssessment::class)->execute($actor, $version, $set, $evaluation);
+            }
             $activity->update(['title' => $data['title']]);
             Audit::record($actor, 'activity.revised', $activity, ['version' => $version->version]);
 

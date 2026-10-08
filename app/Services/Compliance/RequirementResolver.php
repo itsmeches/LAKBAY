@@ -3,6 +3,7 @@
 namespace App\Services\Compliance;
 
 use App\Models\ActivityVersion;
+use App\Models\ClassificationRuleSet;
 use App\Models\PolicyVersion;
 
 class RequirementResolver
@@ -24,14 +25,15 @@ class RequirementResolver
         };
     }
 
-    public function requirementCategory(int $declared, array $conditions): int
+    public function requirementCategory(int $declared, array $conditions, ?ClassificationRuleSet $rules = null): int
     {
         if ($declared !== 3) {
             return $declared;
         }
-        foreach (['strenuous', 'vulnerable_participants', 'requires_accommodation', 'long_distance', 'class_size'] as $key) {
+        $configuration = $rules?->configuration() ?? [];
+        foreach ($configuration['category_3_escalation']['triggers'] ?? ['strenuous', 'vulnerable_participants', 'requires_accommodation', 'long_distance', 'class_size'] as $key) {
             if ($conditions[$key] ?? false) {
-                return 2;
+                return (int) ($configuration['category_3_escalation']['requirement_category'] ?? 2);
             }
         }
 

@@ -23,6 +23,16 @@ class ClassificationRuleSet extends Model
         return ['rules' => 'array', 'source' => 'array'];
     }
 
+    public function configuration(): array
+    {
+        $rules = $this->getAttribute('rules');
+        if (! is_array($rules)) {
+            throw new \LogicException('Classification rules must be structured configuration.');
+        }
+
+        return $rules;
+    }
+
     public function policyVersion(): BelongsTo
     {
         return $this->belongsTo(PolicyVersion::class);

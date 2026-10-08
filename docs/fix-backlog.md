@@ -34,6 +34,8 @@ Actual normal/QA application: each added 1 candidate policy, 64 rules and 13 tem
 
 ## FIX-02 — Validate classification facts and changed activity treatment
 
+**Slice 2:** shared evaluator, SaveActivity assessment integration, confirmation/stale-state checks, policy-aware submission guard and immutable assessment snapshots implemented behind explicit context selection. Original calendar/planning facts, schedule/scope/design, configured materiality, sequential changes/reversions, Category 3 triggers, holiday lead boundaries and unresolved RCD timing have focused coverage. No new form/notification/report interface yet; Slice 3 remains gated. Overall verdict remains PARTIAL. See [Slice 2 report](gap2-slice2-report.md). Source: CMO No. 24 §§12–13, PDF pp.5–7; §16, PDF p.12; §24, PDF p.13; Annex I, PDF p.29.
+
 **Slice 1:** additive rule-set/assessment foundation implemented; defaults remain proposed data, not active classification behavior. Existing SaveActivity/resolver/UI behavior is unchanged. See [plan](gap2-implementation-plan.md), [source register](policy-source-register.md) and [Slice 1 report](gap2-slice1-report.md). Overall verdict remains PARTIAL until separately authorized slices 2–3 and their verification complete. Source: CMO No. 24 §§12–13, PDF pp.5–7; §16, PDF p.12; §24, PDF p.13; Annex I, PDF p.29.
 
 **Priority/type:** Major — partial implementation.

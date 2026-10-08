@@ -1,5 +1,17 @@
 # LAKBAY implementation decisions
 
+## Gap #2 Slice 2 — staged backend, 8 October 2026
+
+CMO No. 24 §§12–13, PDF pp.5–7; §16, PDF p.12; §§22/24, PDF p.13; Annex I, PDF p.29: shared backend evaluation compares original filed/HEI-authorized facts and immediate prior facts separately, recommends treatment and records an authorized confirmation. It preserves the declared category and old versions/receipts/verdicts. A revised Category 1 uses Category 2 requirements when configured changes warrant it; Category 3 uses the configured §13.C.5 triggers without changing declaration.
+
+The explicit `ClassificationEvaluationRuleSeeder` appends evaluation V2 to proposed V1, adding bounded field bindings, contextual choices and the original-calendar invitation predicate. No activation or rewrite occurs. Original calendar receipts include historical July `legacy` stages; an added activity cannot acquire Category 1 merely by sharing their calendar ID. An invitation alone for an unchanged originally listed activity does not automatically reclassify it (CMO No. 24 §13.B.1–3, PDF p.6).
+
+Slice 2 is intentionally staged: `SaveActivity` accepts an explicit `classification` context/rule-set selection, and continues requiring assessment for later revisions of an assessed activity. Legacy versions are not silently opted in. Slice 3 will add the form controls. Assessed saves require the exact expected version; authorized verified HEI membership and configured confirmation permission are checked server-side. The old classification row remains a compatibility record; the assessment's explicit recommended/confirmed state is authoritative for the new path, and submission rejects unconfirmed/stale-policy assessments.
+
+RCD timing remains `unresolved` with null formal due date: no `changed_at +72h` interpretation is introduced (CMO No. 24 §14 row 22/§16, PDF p.12; §24, PDF p.13). Actual recorded execution or an explicit conduct date/time plus evidence reference distinguishes during/after changes; a planned date alone does not establish conduct (§22, PDF p.13). During/after assessments describe changes without retrospectively upgrading the original approval. Insufficient three-working-day lead is flagged using the versioned holiday calendar; late intake remains accepted, never permission to proceed (§14, PDF pp.7–12).
+
+Historic corrections retain their original policy. A new assessment under another policy cannot silently replace the correction baseline; it requires the appropriate separately recorded filing/clarification. No login, MFA, notification, export or template changes are bundled with this slice.
+
 ## Gap #2 Slice 1 — 8 October 2026
 
 Owner approved the materiality defaults in [the plan](gap2-implementation-plan.md), pending CHED decisions. This approval is an operational implementation source, not CHED confirmation. Each persisted materiality row carries decision/source references; no numeric or “minor change” exemption is added. See [source register](policy-source-register.md): CMO No. 24 §§12–13, PDF pp.5–7; §16, PDF p.12; §§22/24, PDF p.13; Annex I, PDF p.29.
