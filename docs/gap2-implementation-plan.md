@@ -2,6 +2,8 @@
 
 8 October 2026. **PLAN ONLY; not approved or implemented.** No policy activation, database changes, application changes or test changes were performed for this plan. FIX-02 remains PARTIAL. This plan does not authorize FIX-03/04 or other backlog work.
 
+Approval addendum, 8 October 2026: the owner subsequently authorized implementation **in slices**, stopping after each. Slice 1 is data/configuration/history only. The original plan was committed first as `edec248`. All policy references below mean **CMO No. 24, s. 2026**, final supplied 36-page source, using PDF page numbers. The [source register and reference map](policy-source-register.md) supplies the section/page pairing for each requirement and identifies the archived July draft. No earlier draft section number overrides this map.
+
 ## Verification answers before the plan
 
 ### Committed QA fixes

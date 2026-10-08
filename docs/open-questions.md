@@ -1,5 +1,9 @@
 # Open CHED questions
 
+## RCD 72-hour anchor — unresolved, gap #2
+
+CMO No. 24 §16 and §14 row 22, PDF p.12; §24, PDF p.13; Annex I, PDF p.29: deviations require immediate reporting, and the formal RCD is due not later than 72 hours “upon conduct”. Confirm commencement, conclusion or another event as the legal anchor. Until confirmed, store `rcd_anchor=unresolved`, retain immediate notice and show no calculated authoritative formal due date/on-time verdict. This is not `changed_at + 72 hours`. Section 22 (PDF p.13) concerns HEI discretion, not this deadline. Future confirmed rules must be prospective and versioned.
+
 ## SAA term coverage — pending CHED confirmation
 
 Working interpretation for gap #1: a valid SAA is per HEI per term, not per activity. Category 1/2 and Category 3 receiving Category 2 requirements can reference the same existing signed original covering that term.

@@ -1,5 +1,15 @@
 # LAKBAY implementation decisions
 
+## Gap #2 Slice 1 — 8 October 2026
+
+Owner approved the materiality defaults in [the plan](gap2-implementation-plan.md), pending CHED decisions. This approval is an operational implementation source, not CHED confirmation. Each persisted materiality row carries decision/source references; no numeric or “minor change” exemption is added. See [source register](policy-source-register.md): CMO No. 24 §§12–13, PDF pp.5–7; §16, PDF p.12; §§22/24, PDF p.13; Annex I, PDF p.29.
+
+Slice 1 adds independent immutable rule sets and assessment chains. No existing classification, policy, receipt, submission requirement or verdict is updated/backfilled. Default data is loaded only through the explicit `ClassificationRuleSetSeeder`, not normal seeding; status is `proposed`, and no resolver/UI consumes it yet. CHED configuration changes can append a data-only successor via `ProposeClassificationRuleSet` with existing verified `policy.manage` authorization and an audit event; the later administrative interface is outside this slice. It does not activate anything.
+
+RCD interpretation: immediate notice remains applicable, but `rcd_anchor=unresolved` and 72-hour formal arithmetic is not selected (CMO No. 24 §14 row 22/§16, PDF p.12; §24, PDF p.13). [Open question](open-questions.md) remains. Migration rollback deliberately refuses to drop these history tables; roll back application code while retaining additive data.
+
+Login/shared-IP changes are [plan only](login-throttle-proposal.md), independent from classification work. No production throttle or test-isolation change is included.
+
 ## SAA applicability — 8 October 2026, gap #1 only
 
 - Section 14 row 10, PDF p.9: SAA applies to Categories 1 and 2. Ordinary Category 3 must not require it.
