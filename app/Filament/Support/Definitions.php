@@ -605,7 +605,7 @@ class Definitions
                 fn (string $title, array $components) => Section::make($title)->schema($components)->columns(2)->columnSpanFull(),
                 array_keys($groups),
                 array_values($groups),
-            ), ClocaForms::activitySection(), ItineraryForms::activitySection(), DiagnosticForms::activitySection(), RacpForms::activitySection()];
+            ), ClassificationForms::section(), ClocaForms::activitySection(), ItineraryForms::activitySection(), DiagnosticForms::activitySection(), RacpForms::activitySection()];
         }
 
         if ($name === 'Document') {

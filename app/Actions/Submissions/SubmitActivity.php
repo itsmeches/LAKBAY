@@ -173,6 +173,13 @@ class SubmitActivity
                 if ($missing) {
                     throw ValidationException::withMessages(['certification_draft_id' => 'Complete the selected certification draft: '.implode('; ', $missing)]);
                 }
+                $assessments = collect($snapshots)->pluck('classification_assessment')->filter()->values();
+                if ($assessments->isNotEmpty()) {
+                    if ($assessments->contains(fn ($assessment) => in_array($assessment['confirmed_category'], [1, 2], true)) && empty($annexF['details']['items']['authorization']['supporting']['saa'])) {
+                        throw ValidationException::withMessages(['certification_draft_id' => 'The selected Annex F must attest SAA availability for Category 1/2 requirement treatment.']);
+                    }
+                    $annexF['classification_context'] = $assessments->map(fn ($assessment) => ['assessment_id' => $assessment['id'], 'declared_category' => $assessment['declared_category'], 'requirement_category' => $assessment['confirmed_category'], 'reason' => $assessment['reason'], 'source' => $assessment['source_references']])->all();
+                }
                 $snapshot['annex_f'] = $annexF;
             } elseif (! empty($previous?->snapshot['annex_f'])) {
                 $snapshot['annex_f'] = $previous->snapshot['annex_f'];
@@ -232,7 +239,9 @@ class SubmitActivity
                 $previous->update(['status' => 'superseded']);
             }
             Audit::record($actor, 'submission.received', $s, ['revision' => $s->revision]);
-            DB::afterCommit(fn () => NotifyInstitution::dispatch($s->institution_id, 'submission-'.$s->id, 'Submission received', $s->reference.' has been recorded. Review is not activity approval.'));
+            $classificationNotice = collect($snapshots)->filter(fn ($version) => isset($version['classification_assessment']))
+                ->map(fn ($version) => 'Activity #'.$version['activity_id'].': declared Category '.$version['category'].', confirmed requirement Category '.$version['requirement_category'].', assessment #'.$version['classification_assessment']['id'].'.')->implode(' ');
+            DB::afterCommit(fn () => NotifyInstitution::dispatch($s->institution_id, 'submission-'.$s->id, 'Submission received', $s->reference.' has been recorded. '.$classificationNotice.' Review is not activity approval.'));
 
             return $s;
         });

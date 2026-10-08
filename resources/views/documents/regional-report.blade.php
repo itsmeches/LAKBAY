@@ -5,4 +5,9 @@
 <p>Student totals are estimated participations, not unique persons.</p>
 <table><thead><tr><th>Activity</th><th>Category</th><th>Starts</th><th>Estimated students</th><th>Submission</th><th>Status</th></tr></thead><tbody>@foreach($report['activities'] as $r)<tr><td>{{ $r['title'] }}</td><td>{{ $r['category'] }}</td><td>{{ $r['starts_at'] }}</td><td>{{ $r['student_participations'] }}</td><td>{{ $r['reference'] }}</td><td>{{ $r['status'] }}</td></tr>@endforeach</tbody></table>
 @foreach($report['monitoring'] ?? [] as $record)<h3>Monitoring #{{ $record['id'] }} - institution #{{ $record['institution_id'] }}, {{ $record['monitored_on'] }}</h3><p>Criteria version: {{ $record['criteria_version'] ?? 'Historical baseline' }}. Rating: {{ $record['overall_rating'] }}</p><table><thead><tr><th>Criterion</th><th>Compliance</th><th>Verification</th><th>Remarks</th></tr></thead><tbody>@foreach($record['items'] as $item)<tr><td>{{ $item['criterion'] }}</td><td>{{ $item['compliance'] }}</td><td>{{ $item['verification'] }}</td><td>{{ $item['remarks'] }}</td></tr>@endforeach</tbody></table>@endforeach
+@foreach($report['activities'] as $row)
+    <p><strong>{{ $row['title'] }} — filed requirement treatment Category {{ $row['requirement_category'] }}</strong>
+    @if(!empty($row['classification_assessment']))<br>{{ \App\Services\Compliance\ClassificationPresentation::describe($row['classification_assessment']) }}
+    @else<br>Historical receipt without assessment metadata; not reconstructed from current facts.@endif</p>
+@endforeach
 <p>Acknowledgment is not CHED authorization. HEI approval and exceptional CEB clearance are separate. Annual M&amp;E is due in the last week of August; the exact cutoff requires confirmation.</p></body></html>

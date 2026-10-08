@@ -2,6 +2,7 @@
 
 namespace App\Filament\Support;
 
+use App\Actions\Activities\ConfirmActivityClassification;
 use App\Actions\Activities\RecordActivityConclusion;
 use App\Actions\Activities\SaveCertificationDraft;
 use App\Actions\Activities\SaveClocaCalendar;
@@ -43,6 +44,7 @@ use App\Models\PolicyVersion;
 use App\Models\Submission;
 use App\Services\Access;
 use App\Services\Compliance\ActivityReadiness;
+use App\Services\Compliance\ClassificationPresentation;
 use App\Services\Compliance\PolicyRules;
 use App\Services\Compliance\RequirementResolver;
 use Filament\Actions\Action;
@@ -50,6 +52,7 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -211,6 +214,14 @@ class WorkflowUi
                 $a[] = Action::make('revise')->url(fn ($record) => ActivityResource::getUrl('edit', ['record' => $record]))->visible(fn () => auth()->user()->can('activities.manage'));
             }
             if ($model === Activity::class) {
+                $a[] = Action::make('classification_history')->label('Classification history and requirements')->modal()
+                    ->schema(fn ($record) => [Text::make(ClassificationPresentation::history($record))])->modalSubmitAction(false);
+                $a[] = Action::make('confirm_classification')->label('Confirm saved classification')
+                    ->visible(fn ($record) => Filament::getCurrentPanel()->getId() === 'hei' && auth()->user()->can('submissions.submit') && app(Access::class)->owns(auth()->user(), $record->institution_id, true) && ClassificationPresentation::latest($record)?->state === 'recommended')
+                    ->fillForm(fn ($record) => ['expected_version_id' => $record->latestVersion->id])
+                    ->schema(fn ($record) => [Text::make(ClassificationPresentation::history($record)),
+                        Hidden::make('expected_version_id')->required(), Textarea::make('reason')->label('Authorized confirmation / change explanation')->required()->maxLength(4000)])
+                    ->action(fn ($record, array $data) => app(ConfirmActivityClassification::class)->execute(auth()->user(), $record, (int) $data['expected_version_id'], $data['reason']));
                 $a[] = Action::make('racp_preview')->label('Preview / print RACP (Annex E)')
                     ->visible(fn ($record) => ! empty($record->latestVersion->racp))
                     ->url(fn ($record) => route('racp.activity', $record))->openUrlInNewTab();
@@ -247,6 +258,8 @@ class WorkflowUi
         }
         if ($model === Submission::class) {
             return [
+                Action::make('submitted_classification')->label('Submitted classification and requirements')->modal()
+                    ->schema(fn ($record) => [Text::make(ClassificationPresentation::submission($record))])->modalSubmitAction(false),
                 Action::make('certification_snapshot')->label('Preserved certification (Annex F)')
                     ->visible(fn ($record) => ! empty($record->snapshot['annex_f']))
                     ->url(fn ($record) => route('certification.submission', $record->public_id))->openUrlInNewTab(),

@@ -94,6 +94,7 @@ test('HEI signs in using real MFA enrollment', async ({ page }) => {
 
 export { login, manifest, artifactRoot };
 
+
 const annexRoutes = {
     B: `/calendars/${manifest.records.calendar}/cloca`,
     C: `/affidavits/${manifest.records.saa}/saa`,
@@ -422,4 +423,33 @@ test('scanner failure preserves quarantine until a genuine successful retry', as
     const preview = page.getByRole('link', { name: 'Open image', exact: true });
     await expect(preview).toBeVisible();
     expect((await page.request.get(await preview.getAttribute('href'))).status()).toBe(200);
+});
+
+test('classification: HEI saves a recommendation and confirms the saved revision', async ({ page }) => {
+    await login(page);
+    await page.goto(`/hei/activities/${manifest.records.activity}/revise`);
+    await expect(page.getByText('Classification assessment and confirmation', { exact: true })).toBeVisible();
+    await page.getByRole('combobox', { name: /^Eligible classification rules/ }).selectOption({ label: 'CMO24-GAP2-EVALUATION-V2 / candidate' });
+    await page.getByRole('textbox', { name: 'Original planning date', exact: true }).fill('2026-01-01');
+    const regular = page.getByRole('switch', { name: 'Regular institutional process', exact: true });
+    if (await regular.getAttribute('aria-checked') !== 'true') await regular.click();
+    await page.getByRole('textbox', { name: 'Faculty / HEI supervision and approval reference', exact: true }).fill('Fictional QA faculty approval');
+    await page.getByRole('textbox', { name: 'Actual conduct date/time (if applicable)', exact: true }).fill('2026-10-01T09:00');
+    await page.getByRole('textbox', { name: 'Actual conduct evidence reference', exact: true }).fill('Fictional QA conduct record');
+    await page.getByRole('textbox', { name: 'Change / applicability explanation', exact: true }).fill('Fictional QA assessment enrollment; preserve filed originals');
+    await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+    await expect(page.getByText('Saved', { exact: true })).toBeVisible();
+    await page.goto(`/hei/activities/${manifest.records.activity}`);
+    await page.getByRole('button', { name: 'Classification history and requirements', exact: true }).click();
+    await expect(page.getByRole('dialog')).toContainText('recommended');
+    await expect(page.getByRole('dialog')).toContainText('Formal RCD deadline anchor: unresolved');
+    await page.getByRole('button', { name: 'Close', exact: true }).first().click();
+    await page.getByRole('button', { name: 'Confirm saved classification', exact: true }).click();
+    await page.getByRole('textbox', { name: /^Authorized confirmation \/ change explanation/ }).fill('Fictional authorized QA confirmation');
+    await page.getByRole('dialog').getByRole('button', { name: 'Submit', exact: true }).click();
+    await expect(page.getByRole('dialog')).not.toBeVisible();
+    await page.reload();
+    await page.getByRole('button', { name: 'Classification history and requirements', exact: true }).click();
+    await expect(page.getByRole('dialog')).toContainText('Fictional authorized QA confirmation');
+    await expect(page.getByRole('dialog')).toContainText('confirmed');
 });

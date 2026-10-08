@@ -320,6 +320,14 @@ Back up the QA database/private storage first. The campaign seeder requires the 
 
 ## Known limits
 
+### Classification revision workflow (Gap #2 Slice 3)
+
+In **HEI → Activities → Revise**, select an eligible classification rule set and enter the planning, supervision, baseline and change context. Saving creates a **recommendation**, not an authorized classification. Open the activity's **Classification history and requirements**, inspect the differences and evidence requirements, then use **Confirm saved classification** with an authorized submitter account and a reason. Confirmation creates another immutable activity version. A later edit requires another confirmation before filing under the selected rules.
+
+CHED's **Submitted classification and requirements** action displays the filed snapshot, not subsequent unsent edits. New filing notices, selected Annex F preparations and regional exports include that same assessment context. Historical preparations and receipts are not regenerated. Annex F's classification continuation is explicitly application metadata, not an additional CMO clause.
+
+Only submission-eligible policies appear in the selector. Unactivated candidates are available solely in the existing explicitly enabled local/testing evaluation mode; this does not activate CMO 24. The previously delivered classification migrations and rule-set seed must be present. Opening an old record alone does not enroll or rewrite it. See [Slice 3 verification and limits](docs/gap2-slice3-report.md).
+
 Security/staging follow-up on **8 October 2026**: a scoped npm override pins concurrently's nested `shell-quote` to patched 1.11.0. Clean `npm ci`, npm audit (**zero vulnerabilities**), command-runner/quoting checks and the asset build pass. CI now runs npm audit and excludes the six deliberately SQLite-only demo tests from its PostgreSQL job; the SQLite job retains them. See [isolated PostgreSQL staging setup](docs/deployment.md#isolated-postgresql-staging-preparation-8-october-2026). Configuration syntax was checked locally; Docker/PostgreSQL execution remains blocked by missing tooling.
 
 - Internal HEI consultation, approvals, signing, and notarization happen externally; the app prepares Annex D/E assessments and records separately signed evidence.

@@ -22,7 +22,9 @@ class RegionalReportBuilder
         $submissions = app(Access::class)->scope(Submission::query(), $actor)->where('submitted_at', '<=', $cutoff)->orderBy('submitted_at')->orderBy('id')->get();
         foreach ($submissions as $s) {
             foreach ($s->snapshot['activities'] as $v) {
-                $rows->put($v['activity_id'], ['institution_id' => $s->institution_id, 'activity_id' => $v['activity_id'], 'title' => $v['title'], 'category' => $v['category'], 'requirement_category' => $v['requirement_category'], 'starts_at' => $v['starts_at'], 'student_participations' => $v['student_count'], 'reference' => $s->reference, 'status' => $s->status, 'is_late' => $s->is_late]);
+                $assessment = $v['classification_assessment'] ?? null;
+                $rows->put($v['activity_id'], ['institution_id' => $s->institution_id, 'activity_id' => $v['activity_id'], 'title' => $v['title'], 'category' => $v['category'], 'requirement_category' => $v['requirement_category'], 'starts_at' => $v['starts_at'], 'student_participations' => $v['student_count'], 'reference' => $s->reference, 'status' => $s->status, 'is_late' => $s->is_late,
+                    'classification_assessment' => $assessment]);
             }
         }
         if ($from) {

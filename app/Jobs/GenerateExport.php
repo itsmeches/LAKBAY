@@ -34,9 +34,11 @@ class GenerateExport implements ShouldQueue
             $contents = Pdf::loadView('documents.regional-report', ['report' => $data])->setPaper('a4', 'landscape')->output();
         } else {
             $stream = fopen('php://temp', 'r+');
-            fputcsv($stream, ['Institution', 'Activity', 'Category', 'Requirements category', 'Starts', 'Estimated student participations', 'Submission', 'Status', 'Late'], ',', '"', '');
+            fputcsv($stream, ['Institution', 'Activity', 'Category', 'Requirements category', 'Starts', 'Estimated student participations', 'Submission', 'Status', 'Late', 'Assessment', 'Assessment state', 'Classification rules', 'Baseline receipt', 'Confirmed by', 'Change reason', 'Immediate RCD notice', 'RCD anchor'], ',', '"', '');
             foreach ($data['activities'] as $r) {
                 $values = [$r['institution_id'], $r['title'], $r['category'], $r['requirement_category'], $r['starts_at'], $r['student_participations'], $r['reference'], $r['status'], $r['is_late'] ? 'Yes' : 'No'];
+                $assessment = $r['classification_assessment'] ?? [];
+                $values = [...$values, $assessment['id'] ?? '', $assessment['state'] ?? 'Historical / not snapshotted', $assessment['classification_rule_set_id'] ?? '', $assessment['baseline_submission_id'] ?? '', $assessment['confirmed_by'] ?? '', $assessment['reason'] ?? '', isset($assessment['timing']) ? (! empty($assessment['timing']['immediate_notice_required']) ? 'Yes' : 'No') : '', $assessment['timing']['rcd_anchor'] ?? ''];
                 $values = array_map(fn ($v) => is_string($v) && preg_match('/^[=+@\-\t\r]/', $v) ? "'".$v : $v, $values);
                 fputcsv($stream, $values, ',', '"', '');
             }

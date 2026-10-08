@@ -105,6 +105,15 @@
             @endforeach
         </div>
     @endif
+    @if(!empty($certification['classification_context']))
+        <div class="next-page"><h1>Application classification context — supplementary record</h1>
+            <p>This is not an additional CMO certification clause. Typed preparations do not establish signatures or CHED authorization.</p>
+            @foreach($certification['classification_context'] as $assessment)
+                <p>Assessment #{{ $assessment['assessment_id'] }}: declared Category {{ $assessment['declared_category'] }}; confirmed requirement Category {{ $assessment['requirement_category'] }}.
+                {{ $assessment['requirement_category'] === 3 ? 'Ordinary Category 3: SAA and row-12 PIC designation are not required.' : 'Category 1/2 treatment: applicable SAA and PIC requirements remain.' }}<br>Reason: {{ $assessment['reason'] }}</p>
+            @endforeach
+        </div>
+    @endif
 </div>
 </body>
 </html>
