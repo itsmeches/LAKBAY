@@ -76,3 +76,10 @@ The first temporary-server arguments were incorrectly quoted for paths containin
 Therefore gap #1 has passing domain/Livewire/HTML and direct browser-checklist evidence, but the whole browser suite is **not green**. Fresh browser PDF/scanner verification remains blocked. PostgreSQL was not available and was not verified. Automatic term coverage/notarization remains outside this change pending CHED confirmation. The implementation does not constitute production or policy-activation approval.
 
 Final before/after comparison, repeated after browser testing, again found zero existing rows changed/deleted in either original database. Only 1 policy, 64 rules and 13 template copies were added per database. Gap #2 and all other backlog items remain untouched.
+
+
+## Gap #1 verification follow-up ? 8 October 2026
+
+The candidate successor selector originally followed candidates in production. A new regression test failed before the fix (3 selected instead of confirmed 2); selection now reuses submission eligibility. Production keeps its eligible source until a successor is confirmed and effective. Local/testing candidate experiments remain explicit. Actual databases remain unpublished candidates; test publication fixtures do not activate them.
+
+Full PHPUnit now passes 394 tests / 1,920 assertions. Current corrected-harness browser suite passes 34/34; the last committed pre-gap app f7a8af8 passes 32 and fails two earlier QA defects (missing monitoring print action and scanner-exit classification). All original 15 failures pass individually; old-temp controls reproduce environmental failures. History hashes and scratch restore pass. PostgreSQL remains unexecuted, with precise prerequisites in [verification report](gap1-verification-report.md). See [activation/rollback runbook](policy-activation-runbook.md); no policy was activated and gap #2 remains untouched.

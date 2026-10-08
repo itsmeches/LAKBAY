@@ -24,7 +24,15 @@ class PolicyRules
     public function forDraft(PolicyVersion $policy): PolicyVersion
     {
         $visited = [];
-        while ($next = PolicyVersion::where('parameters->supersedes_policy_version_id', $policy->id)->latest('id')->first()) {
+        while ($next = PolicyVersion::where('parameters->supersedes_policy_version_id', $policy->id)->latest('id')->get()->first(function (PolicyVersion $successor): bool {
+            try {
+                $this->authorizeSubmission($successor);
+
+                return true;
+            } catch (ValidationException) {
+                return false;
+            }
+        })) {
             if (isset($visited[$next->id])) {
                 throw new \LogicException('Policy successor cycle.');
             }

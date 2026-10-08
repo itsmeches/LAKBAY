@@ -6,6 +6,8 @@ import { execFileSync } from 'node:child_process';
 
 const manifestPath = process.env.LAKBAY_QA_MANIFEST || 'storage/app/qa-demo/app/qa-campaign/manifest.json';
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+const phpOptions = process.env.QA_PHP_INI ? ['-c', process.env.QA_PHP_INI] : [];
+const pngFixture = process.env.QA_PNG_FIXTURE || 'storage/app/qa-demo/app/private/fixtures/qa-image.png';
 const artifactRoot = process.env.LAKBAY_QA_ARTIFACT_ROOT || 'storage/app/qa-campaign-browser';
 fs.mkdirSync(artifactRoot, { recursive: true });
 
@@ -19,6 +21,28 @@ function totp(secret) {
     return String((digest.readUInt32BE(digest[19] & 15) & 0x7fffffff) % 1000000).padStart(6, '0');
 }
 
+async function submitLoginStep(page, buttonName, secret = null) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+        if (secret) {
+            const code = page.getByLabel(/6-digit code/);
+            await code.fill('');
+            await code.pressSequentially(totp(secret));
+        }
+        await Promise.all([
+            page.waitForResponse(response => response.request().method() === 'POST' && response.url().endsWith('/update')),
+            page.getByRole('button', { name: buttonName, exact: true }).click(),
+        ]);
+        const limited = page.getByText('Too many login attempts', { exact: true });
+        if (!await limited.waitFor({ state: 'visible', timeout: 1500 }).then(() => true, () => false)) return;
+        const notice = await page.getByText(/Please try again in \d+ seconds/).first().innerText();
+        const seconds = Number(notice.match(/\d+/)[0]);
+        if (seconds > 60) throw new Error(`Login retry interval exceeds test limit: ${seconds}s`);
+        console.log(`QA login rate limit: waiting ${seconds + 1}s before retry ${attempt + 1}`);
+        await page.waitForTimeout((seconds + 1) * 1000);
+    }
+    throw new Error('Login remained rate limited after three attempts.');
+}
+
 async function login(page, role = 'hei') {
     const account = manifest.accounts[role];
     const sessionPath = path.join(artifactRoot, `session-${role}.json`);
@@ -30,10 +54,9 @@ async function login(page, role = 'hei') {
     await page.goto(`/${account.panel}/login`);
     await page.getByLabel('Email address').fill(account.email);
     await page.locator('input[type="password"]').fill(account.password);
-    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    await submitLoginStep(page, 'Sign in');
     if (account.secret) {
-        await page.getByLabel(/6-digit code/).pressSequentially(totp(account.secret));
-        await page.getByRole('button', { name: 'Confirm sign in', exact: true }).click();
+        await submitLoginStep(page, 'Confirm sign in', account.secret);
     } else {
         await expect(page).toHaveURL(/multi-factor-authentication\/set-up/);
     }
@@ -329,7 +352,7 @@ test('HEI PNG upload completes, stays quarantined, then genuine scan permits pre
     await page.getByLabel(/Institution id/).selectOption(String(manifest.records.institution));
     await page.getByLabel(/Document type id/).selectOption({ label: 'Monitoring and Evaluation' });
     const filename = `qa-campaign-upload-${Date.now()}.png`;
-    const png = fs.readFileSync('storage/app/qa-demo/app/private/fixtures/qa-image.png');
+    const png = fs.readFileSync(pngFixture);
     await page.locator('input[type="file"]').setInputFiles({ name: filename, mimeType: 'image/png', buffer: png });
     await expect(page.locator('.filepond--file-status-main')).toHaveText(/Upload complete|Upload completed/, { timeout: 30000 });
     await page.getByRole('button', { name: 'Create', exact: true }).click();
@@ -337,7 +360,7 @@ test('HEI PNG upload completes, stays quarantined, then genuine scan permits pre
     const row = page.locator('tr').filter({ hasText: filename });
     await expect(row).toContainText(/pending/i);
     const php = process.env.QA_PHP || path.join(process.env.LOCALAPPDATA, 'lakbay-dev-tools/php/php.exe');
-    const output = execFileSync(php, [ 'artisan', 'queue:work', '--env=local', '--stop-when-empty', '--tries=1', '--timeout=180', '--no-interaction'], { timeout: 240000, encoding: 'utf8' });
+    const output = execFileSync(php, [...phpOptions, 'artisan', 'queue:work', '--env=local', '--stop-when-empty', '--tries=1', '--timeout=180', '--no-interaction'], { timeout: 240000, encoding: 'utf8' });
     fs.writeFileSync(path.join(artifactRoot, 'queue-worker.txt'), output);
     await page.reload();
     await expect(page.locator('tr').filter({ hasText: filename })).toContainText(/clean/i);
@@ -380,13 +403,13 @@ test('scanner failure preserves quarantine until a genuine successful retry', as
     await page.getByLabel(/Institution id/).selectOption(String(manifest.records.institution));
     await page.getByLabel(/Document type id/).selectOption({ label: 'Monitoring and Evaluation' });
     const filename = `qa-scanner-failure-${Date.now()}.png`;
-    await page.locator('input[type="file"]').setInputFiles({ name: filename, mimeType: 'image/png', buffer: fs.readFileSync('storage/app/qa-demo/app/private/fixtures/qa-image.png') });
+    await page.locator('input[type="file"]').setInputFiles({ name: filename, mimeType: 'image/png', buffer: fs.readFileSync(pngFixture) });
     await expect(page.locator('.filepond--file-status-main')).toHaveText(/Upload complete|Upload completed/, { timeout: 30000 });
     await page.getByRole('button', { name: 'Create', exact: true }).click();
     const row = page.locator('tr').filter({ hasText: filename });
     await expect(row).toContainText(/pending/i);
     const php = process.env.QA_PHP || path.join(process.env.LOCALAPPDATA, 'lakbay-dev-tools/php/php.exe');
-    const failure = execFileSync(php, [ 'artisan', 'queue:work', '--env=local', '--once', '--no-interaction'], { encoding: 'utf8', timeout: 180000, env: { ...process.env, LAKBAY_SCANNER_COMMAND: 'missing-scanner-QA-only.exe' } });
+    const failure = execFileSync(php, [...phpOptions, 'artisan', 'queue:work', '--env=local', '--once', '--no-interaction'], { encoding: 'utf8', timeout: 180000, env: { ...process.env, LAKBAY_SCANNER_COMMAND: 'missing-scanner-QA-only.exe' } });
     expect(failure).toContain('FAIL');
     fs.writeFileSync(path.join(artifactRoot, 'scanner-failure-worker.txt'), failure);
     await page.reload();
@@ -394,7 +417,7 @@ test('scanner failure preserves quarantine until a genuine successful retry', as
     await page.locator('tr').filter({ hasText: filename }).getByRole('link', { name: 'View', exact: true }).click();
     await expect(page.getByRole('link', { name: 'Open image', exact: true })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Download', exact: true })).toHaveCount(0);
-    execFileSync(php, [ 'artisan', 'queue:work', '--env=local', '--stop-when-empty', '--no-interaction'], { encoding: 'utf8', timeout: 240000 });
+    execFileSync(php, [...phpOptions, 'artisan', 'queue:work', '--env=local', '--stop-when-empty', '--no-interaction'], { encoding: 'utf8', timeout: 240000 });
     await page.reload();
     const preview = page.getByRole('link', { name: 'Open image', exact: true });
     await expect(preview).toBeVisible();

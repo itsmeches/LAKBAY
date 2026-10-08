@@ -194,6 +194,27 @@ class Cmo24AlignmentTest extends TestCase
         $this->submit($activity);
     }
 
+    public function test_production_drafts_do_not_follow_unactivated_successors(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-10-20'));
+        $source = app(ConfirmPolicy::class)->execute($this->staff('system_administrator'), $this->policy, [
+            'confirmed_by_ched' => true, 'confirmation_reference' => 'TEST ONLY',
+            'publication_on' => '2026-10-01', 'publication_reference' => 'TEST ONLY publication',
+        ]);
+        $successor = $source->replicate();
+        $successor->fill(['code' => 'TEST-SUCCESSOR', 'status' => 'candidate', 'publication_on' => null,
+            'publication_reference' => null, 'effective_on' => null,
+            'parameters' => array_merge($source->parameters, ['supersedes_policy_version_id' => $source->id])])->save();
+        $this->app->detectEnvironment(fn () => 'production');
+        $this->assertSame($source->id, app(PolicyRules::class)->forDraft($source)->id);
+        app(PolicyRules::class)->authorizeSubmission($source);
+        $successor->update(['status' => 'confirmed', 'publication_on' => '2026-10-10',
+            'publication_reference' => 'TEST ONLY publication', 'effective_on' => '2026-10-25']);
+        $this->assertSame($source->id, app(PolicyRules::class)->forDraft($source)->id);
+        $this->travelTo(CarbonImmutable::parse('2026-10-25'));
+        $this->assertSame($successor->id, app(PolicyRules::class)->forDraft($source)->id);
+    }
+
     public function test_publication_is_required_and_effectivity_is_derived(): void
     {
         $admin = $this->staff('system_administrator');

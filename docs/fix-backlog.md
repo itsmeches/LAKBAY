@@ -14,7 +14,7 @@ This accompanies [the report](CMO-conformance-report.md) and [traceability matri
 
 ## FIX-01 — Correct ordinary Category 3 SAA
 
-**Status:** IMPLEMENTED — gap #1 only, 8 October 2026. Full PHPUnit: 393/393 tests, 1,917 assertions; focused suite: 73/73, 229 assertions; Pint/PHPStan/full PHP lint passed. Direct browser ordinary/escalated checklists passed 2/2. Broader browser campaign: 19 passed, 15 failed with unresolved disposable-runtime PDF/upload/login problems; retries were interrupted. See decisions.md for raw output and limitations. Other backlog items are unchanged.
+**Status:** IMPLEMENTED ? gap #1 only, verified 8 October 2026. Full PHPUnit: 394/394, 1,920 assertions; current browser: 34/34; original 15 failures: individually pass after environment/test configuration correction. The pre-gap commit has two pre-existing QA defects. A production candidate-selection regression introduced by gap #1 was reproduced and fixed. Pint/PHPStan/PHP lint pass; history checksums and scratch restore pass. PostgreSQL remains blocked. See [verification report](gap1-verification-report.md) and [activation runbook](policy-activation-runbook.md). Other backlog items are unchanged.
 
 Fresh seeding uses Categories 1–2. `lakbay:correct-saa` dry-run/`--apply` creates an idempotent candidate successor for existing incorrect baselines; new draft forms follow it and corrections retain their original policy. Annex F supports explained N/A with its SAA checkbox unchecked. Existing evidence can be reused for the HEI term under the pending working interpretation. No migration, historical update, deletion, re-evaluation or policy activation was performed.
 

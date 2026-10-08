@@ -2,6 +2,10 @@
 
 This guide describes the inspected LAKBAY repository on 7 October 2026. It is a testing document, not CHED policy approval. Use fictional records in the isolated local demo. Record your own results; automated coverage does not mean a browser test has passed.
 
+## Gap #1 verification follow-up
+
+See [executed baseline comparison and all 15 failure classifications](gap1-verification-report.md) and [activation/rollback runbook](policy-activation-runbook.md). Current browser: 34/34; last committed baseline: 32 passed / 2 pre-existing failures; full PHPUnit: 394/394. Use isolated writable temp configuration for both the PHP web server and scan worker, a valid fixture PNG, and the rate-limit-aware login helper. PostgreSQL remains blocked; CMO 24 remains candidate. Existing filed branches are preservation checks, not a fresh lifecycle.
+
 ## Executed QA campaign: 8 October 2026
 
 Campaign `QA-CAMPAIGN-20261008` ran against the isolated `database/qa-demo.sqlite` database, private QA storage and `http://127.0.0.1:8001`. The normal application database was not used. All campaign people and institutions are fictional. Mail used local logging; no external recipient was contacted. CMO 24 remains **candidate**, with no publication date or reference invented.
