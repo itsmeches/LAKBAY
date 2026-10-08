@@ -500,6 +500,41 @@ class Cmo24AlignmentTest extends TestCase
         $this->assertSame($hasIssue, count($issues) > 0);
     }
 
+    public function test_ordinary_category_three_can_be_prepared_and_submitted_with_supervisor_only(): void
+    {
+        $activity = $this->activity(3, ['personnel' => [['role' => 'supervisor', 'name' => 'Faculty supervisor', 'position' => 'Faculty', 'contact' => 'supervisor@example.test']]]);
+        $this->assertSame(3, $activity->latestVersion->requirement_category);
+        $this->assertFalse($activity->latestVersion->personnel->contains('role', 'pic'));
+        $this->assertSame([], app(ActivityCompliance::class)->issues($activity->latestVersion));
+        $submission = $this->submit($activity);
+        $this->assertFalse($submission->requirements()->whereHas('policyRequirement', fn ($query) => $query->where('section_row', 12))->exists());
+    }
+
+    public static function picRequiredTreatments(): array
+    {
+        return [
+            'Category 1' => [1, []], 'Category 2' => [2, []],
+            'strenuous Category 3' => [3, ['strenuous' => true]],
+            'accommodation Category 3' => [3, ['requires_accommodation' => true]],
+            'long-distance Category 3' => [3, ['long_distance' => true]],
+            'vulnerable Category 3' => [3, ['vulnerable_participants' => true]],
+            'class-size Category 3' => [3, ['class_size' => true]],
+        ];
+    }
+
+    #[DataProvider('picRequiredTreatments')]
+    public function test_applicable_pic_requirement_cannot_be_replaced_by_a_supervisor(int $category, array $conditions): void
+    {
+        $before = Activity::count();
+        try {
+            $this->activity($category, ['conditions' => $conditions, 'personnel' => [['role' => 'supervisor', 'name' => 'Faculty supervisor', 'position' => 'Faculty', 'contact' => 'supervisor@example.test']]]);
+            $this->fail('An applicable PIC designation must remain required.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('personnel', $exception->errors());
+            $this->assertSame($before, Activity::count());
+        }
+    }
+
     public function test_apic_does_not_replace_pic_and_missing_training_blocks_submission(): void
     {
         $activity = $this->activity(2, ['student_count' => 31, 'conditions' => ['requires_physical_activity' => true, 'requires_travel' => true],

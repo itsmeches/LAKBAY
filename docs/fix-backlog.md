@@ -1,6 +1,6 @@
 # LAKBAY — CMO conformance fix backlog
 
-Original read-only audit, 8 October 2026. Subsequent authorized work implements **FIX-01 only**; every other item remains proposed. Preserve current accounts, policy history, snapshots and signed originals. Publication remains unverified and CMO 24 must stay a candidate.
+Original read-only audit, 8 October 2026. Subsequent authorized work implements FIX-01 and FIX-02 slices 1–2; FIX-02 remains PARTIAL pending separately authorized Slice 3. Other fixes remain proposed. The [final-CMO delta check](cmo-final-delta-check.md) updates findings only. Preserve current accounts, policy history, snapshots and signed originals. Publication remains unverified and CMO 24 must stay a candidate.
 
 This accompanies [the report](CMO-conformance-report.md) and [traceability matrix](traceability-matrix.csv). Severity is an impact assessment. CHED decisions are not code defects; external procedural records do not imply transferring legal authority to software.
 
@@ -52,13 +52,15 @@ Actual normal/QA application: each added 1 candidate policy, 64 rules and 13 tem
 
 ## FIX-03 — Complete personnel qualification checks
 
+**Ordinary Category 3 PIC blocker fixed separately, 8 October 2026:** the save-time PIC guard now uses the resolved requirement category after classification/evaluation, matching `ActivityCompliance`. Ordinary Category 3 can be prepared/submitted with a supervising faculty member and no PIC; Categories 1–2 and all five escalated Category 3 triggers retain the PIC guard. Missing-PIC saves/revisions roll back atomically. No policy rows, historical records, APIC proof rules or Slice 3 UI changes were modified. Tests: `Cmo24AlignmentTest::test_ordinary_category_three_can_be_prepared_and_submitted_with_supervisor_only`, `test_applicable_pic_requirement_cannot_be_replaced_by_a_supervisor` (seven cases), `ClassificationEvaluationTest::test_confirmed_ordinary_category_three_can_use_supervisor_without_pic`. SEC14-R12-C3 is now IMPLEMENTED for designation applicability. Remaining personnel qualification questions in FIX-03 stay open; see [verification](ordinary-category3-pic-fix.md).
+
 **Priority/type:** Major — partial implementation.
 
 **Traceability:** SEC12-07–14.
 
-**Finding:** PIC qualification checks operate for requirement categories 1/2; APIC attributes do not receive equivalent checks. Ordinary Category 3 PIC checks need interpretation of the general definition.
+**Finding:** PIC qualification checks operate for requirement categories 1/2. Final-CMO delta confirms a contradiction: `SaveActivity.php:100–102` nevertheless requires role PIC for every ordinary Category 3 plan. Section 14 row 12, PDF p.10 marks only Categories 1–2; Category 3 supervision must not silently become mandatory PIC designation. Escalated Category 3 receives Category 2 rules. Traceability SEC14-R12-C3 changed IMPLEMENTED → CONTRADICTS. Existing fixtures contain PICs and do not test this absence case. No fix applied by the delta review.
 
-**Proposed task:** Validate designated PIC/APIC employment, accompaniment, relevant experience and first-aid particulars where applicable; confirm Category 3 designation expectations. Keep APIC out of the PIC ratio unless CHED authorizes counting.
+**Proposed task:** Remove the ordinary Category 3 universal-PIC blocker through an independently authorized change and add supervisor-only preparation coverage; retain applicable PIC requirements for Categories 1–2/escalated Category 3. Validate designated personnel employment, accompaniment and relevant experience where applicable. Section 12.H, PDF pp.5–6 requires APIC basic first-aid knowledge, but Annex F PDF p.25 names training proof only for PIC. Do not add mandatory APIC training-proof uploads without CHED confirmation. Keep APIC out of the PIC ratio unless CHED authorizes counting.
 
 **Acceptance:** Missing applicable personnel particulars produce clear field/readiness messages. Existing 30/50 ratio boundaries pass. No student medical-history fields are added.
 
@@ -189,6 +191,15 @@ Actual normal/QA application: each added 1 candidate policy, 64 rules and 13 tem
 **Acceptance:** Foreign activities are clearly routed to applicable separate guidance; the approved CLOCA acknowledgment package can generate its correct signed-letter preparation.
 
 **Evidence:** app/Actions/Activities/SaveActivity.php; app/Services/Reporting/AcknowledgmentBuilder.php.
+
+## Delta review additions — proposed only
+
+8 October 2026, [read-only final-CMO check](cmo-final-delta-check.md). These do not authorize application changes or Slice 3.
+
+- **FIX-10 — Annex K exact-output adaptation (Minor / PARTIAL):** Annex K PDF p.31 fixed paragraphs match, but the printed app adds a Reference line and adapts layout. Confirm acceptance of additions or prepare an exact-template option prospectively. Traceability `AUD-DELTA-K-EXACT`; evidence `acknowledgment.blade.php`, `AcknowledgmentTest`. Do not relabel historical signed letters or delete references from records.
+- **FIX-11 — Verify both Annex N reference pages (Major / PARTIAL):** Annex N PDF pp.35–36 metadata exists, but no dedicated two-page output test or verified registered public download was established. Confirm the approved reference-file publication and preserve both pages; do not create an extra data-entry module. Order reconciliation remains a CHED decision recorded in open-questions. Traceability `AUD-DELTA-N-REFERENCE`; do not silently enforce one conflicting diagram.
+- **FIX-06 extension — Clearance lead coordination (Major / PARTIAL):** §27 PDF pp.13–14 and §14 PDF pp.7–12 require distinct timelines. Record/clarify which complete evidence accompanies the 90-day application and how later pre-activity updates are handled; the three-working-day rule never waives the 90-day application. Calendar day interpretation remains provisional. Traceability `AUD-DELTA-CLEARANCE-LEADS`. Existing due-date/routing tests pass; no integrated coordination test added by this read-only review.
+- **FIX-05 naming clarification (PARTIAL):** §34.D PDF p.16 names the CHED Committee. Current UI says generic Committee recommendation, and no Committee on Student Well-being hardcoding was found. Use the authoritative body name when that separately authorized workflow is completed; do not infer a new legal decision-maker.
 
 ## Complete unresolved-entry assignment
 

@@ -1,5 +1,13 @@
 # Open CHED questions
 
+## Final CMO Category 3 timelines — rows 1, 2 and 6
+
+CMO No. 24, s.2026 §14 row 1, PDF p.7; row 2, PDF p.8; row 6, PDF p.9: all mark Category 3, but timeline wording specifies Categories 1–2 only. Confirm the ordinary Category 3 deadline for these certifications, including conditional cost consultation. The candidate stores unresolved deadlines; do not silently assign the Category 2 three-working-day deadline to ordinary Category 3. Escalated Category 3 receives Category 2 treatment under §13.C.5, PDF p.7.
+
+## Annex N step order — both pages
+
+CMO No. 24 Annex N, PDF p.35 checks completeness before acknowledgment; PDF p.36 places acknowledgment before checking compliance and draws the submission branch before HEI approval. Annex K, PDF p.31 states reviewed for completeness; §§19–21, PDF pp.12–13 also need reconciliation. Confirm whether the earlier step is an intake receipt or the signed Annex K letter, and the intended HEI authorization/submission order. Current application separates electronic intake receipt from signed completeness acknowledgment, and requires HEI authorization before submission. No policy activation or sequence change follows from documenting this question.
+
 ## Gap #2 operational interpretations — still pending
 
 CMO No. 24 §13.B.3, PDF p.6; §13.C.5, PDF p.7; §16, PDF p.12; Annex I, PDF p.29: confirm the approved materiality defaults, restoration of Category 1/ordinary Category 3 after a reversion, consolidated versus per-event RCDs, original versus latest revised receipt selection, and treatment of amendments versus old-policy corrections. These are explicit configuration/context and history decisions, not silent exemptions. No numerical/“minor change” threshold is implemented. The existing RCD formal anchor question below remains unresolved.

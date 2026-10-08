@@ -163,6 +163,27 @@ class ClassificationEvaluationTest extends TestCase
         $this->assertContains('saa', collect($this->assessment($new)->requirements_after)->pluck('document_code')->all());
     }
 
+    public function test_confirmed_ordinary_category_three_can_use_supervisor_without_pic(): void
+    {
+        $activity = $this->create(3, ['personnel' => [['role' => 'supervisor']]]);
+        $assessment = $this->assessment($activity);
+        $this->assertSame('confirmed', $assessment->state);
+        $this->assertSame(3, $assessment->confirmed_category);
+        $this->assertFalse($activity->latestVersion->personnel->contains('role', 'pic'));
+        $receipt = $this->receipt($activity, stage: 'pre_activity');
+        $original = $receipt->snapshot;
+        $originalVersion = $activity->latestVersion->fresh()->getAttributes();
+        try {
+            $this->revise($activity, ['conditions' => ['strenuous' => true]]);
+            $this->fail('Escalation must require a PIC even when the previous ordinary plan had none.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('personnel', $exception->errors());
+        }
+        $this->assertSame($original, $receipt->fresh()->snapshot);
+        $this->assertSame($originalVersion, $activity->fresh()->latestVersion->getAttributes());
+        $this->assertSame(1, $activity->versions()->count());
+    }
+
     public function test_ordinary_category_three_has_no_saa(): void
     {
         $activity = $this->create(3);

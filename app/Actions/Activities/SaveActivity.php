@@ -97,9 +97,6 @@ class SaveActivity
         if ($activity && $activity->latestVersion->category !== (int) $data['category'] && empty(trim($data['classification_reason'] ?? ''))) {
             throw ValidationException::withMessages(['classification_reason' => 'Explain a change to the declared category.']);
         }
-        if (! collect($data['personnel'])->contains('role', 'pic')) {
-            throw ValidationException::withMessages(['personnel' => 'Designate a PIC.']);
-        }
         $period = AcademicPeriod::findOrFail($data['academic_period_id']);
         abort_unless($period->institution_id === $data['institution_id'], 403);
         foreach (['calendar_id' => Calendar::class, 'campus_id' => Campus::class] as $key => $class) {
@@ -168,6 +165,9 @@ class SaveActivity
                 $facts = $fields + $activity->only(['institution_id', 'academic_period_id', 'calendar_id', 'campus_id']) + ['personnel' => $data['personnel'], 'itinerary' => $itinerary];
                 $evaluation = app(ClassificationEvaluator::class)->evaluate($activity, $facts, $set, $classification);
                 $category = $evaluation['recommended_category'];
+            }
+            if (in_array($category, [1, 2], true) && ! collect($data['personnel'])->contains('role', 'pic')) {
+                throw ValidationException::withMessages(['personnel' => 'Designate a PIC for Category 1 or Category 2 requirement treatment.']);
             }
             $version = ActivityVersion::create($fields + ['activity_id' => $activity->id, 'version' => ($activity->versions()->max('version') ?? 0) + 1, 'requirement_category' => $category, 'created_by' => $actor->id]);
             foreach ($data['personnel'] as $person) {
