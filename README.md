@@ -210,7 +210,7 @@ These additive updates retain existing records. Back up the database before depl
 Select the candidate CMO 24 policy when submitting. Complete the activity's physical-activity/travel facts and PIC qualification, employment, accompaniment and first-aid references first.
 
 - Category 1: submit the annual package from Calendars, then submit later pre-activity evidence from the individual Activity. Reusing its activity version across these two stages is supported.
-- Categories 2–3: submit pre-activity evidence from Activities. Category 3 SAA is required; unclear deadlines remain visibly unresolved.
+- Categories 2–3: submit pre-activity evidence from Activities. Ordinary Category 3 does not require SAA. Category 3 treated as Category 2 does; existing valid HEI-term SAA evidence may be reused (coverage interpretation pending CHED confirmation). Other unclear deadlines remain unresolved.
 - Evidence: one certification may cover multiple requirement rows. Include listed supporting evidence. Signed forms require PDF; permitted copies need not be marked signed.
 - Incidents: the CMO candidate uses 48 elapsed hours. Missing signed evidence creates an initial notice; attach a signed report through a supplement.
 - Changes: record the immediate notice after creating a revised activity version. The formal deadline remains unresolved pending CHED's interpretation of “upon conduct.”

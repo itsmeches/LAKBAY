@@ -4,7 +4,7 @@ Source: issued CMO No. 24, s. 2026, 36 PDF pages, issued 28 September 2026, supp
 
 Production blockers:
 - Verified publication date/reference and effectivity: §41 specifies publication +15 days; issuance is not publication. §40 sets AY 2026–2027 CLOCA/SAA at publication +30 calendar days.
-- Category 3 deadlines: §14 rows 1, 2, 6 and 10 mark Category 3 but give deadline text only for Categories 1–2.
+- Category 3 deadlines: §14 rows 1, 2 and 6 mark Category 3 but give deadline text only for Categories 1–2. Row 10 does not mark ordinary Category 3.
 - Change report deadline and anchor; immediate notice versus formal report.
 - SAA scope/frequency and semester versus annual coverage.
 - Annex C identifies a duly authorized affiant in its introductory paragraph but labels the signature as HEAD OF HEI. Confirm delegated-signatory treatment; preparation currently follows the HEI-head signature block without treating account membership as signing authority.
@@ -41,7 +41,7 @@ Further questions:
 Resolved by the final order:
 - Incident reporting is 48 hours from occurrence (§§14, 17, 25), not the July draft's contradictory 24/72 hours.
 - ROC is 72 hours from actual conclusion (§14 row 20).
-- SAA is marked for all three categories; pre-departure orientation is marked for Categories 2–3.
+- SAA is marked for Categories 1–2 only; Category 3 receiving Category 2 requirements must also supply it. Per-HEI/per-term reuse is a working interpretation pending confirmation; see decisions.md and open-questions.md. Pre-departure orientation is marked for Categories 2–3.
 - Annex identifiers are B CLOCA, C SAA, D Diagnostic, E RACP, F Certification, G ROC, H Incident, I Change, J Itinerary, K Acknowledgment, L Consent, M Monitoring and N Process.
 - One reconsideration is permitted within 15 calendar days of receipt of denial (§27).
 

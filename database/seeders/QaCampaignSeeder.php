@@ -120,7 +120,7 @@ class QaCampaignSeeder extends Seeder
                 'description' => 'Fictional transport arrived late; no injuries.', 'immediate_actions' => 'PIC informed the office and adjusted the itinerary.', 'current_status' => 'Resolved.',
                 'persons' => [['name' => 'Fictional Faculty PIC', 'role' => 'PIC', 'remarks' => 'Coordinated response']], 'supporting_details' => 'Fictional coordination log.', 'official' => 'Fictional Maria Cruz', 'position' => 'President']]);
         $manifest['records'] = array_replace($manifest['records'], ['institution' => $institution->id, 'calendar' => $calendar->id, 'activity' => $activity->id, 'version' => $reportBase['activity_version_id'], 'saa' => $saa->id, 'certification' => $certification->id, 'roc' => $roc->id, 'incident' => $incident->id]);
-        $policy = PolicyVersion::where('code', 'CMO24-2026')->firstOrFail();
+        $policy = app(PolicyRules::class)->forDraft(PolicyVersion::where('code', 'CMO24-2026')->firstOrFail());
         if (! array_key_exists('requires_physical_activity', $activity->latestVersion->conditions)) {
             $version = $activity->latestVersion;
             $revision = $version->only(['title', 'category', 'academic_nature', 'activity_type', 'initiator', 'description', 'learning_objectives', 'responsible_office', 'venue', 'student_count', 'other_count', 'conditions', 'authorization', 'cloca']);

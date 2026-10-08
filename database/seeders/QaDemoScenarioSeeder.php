@@ -34,7 +34,7 @@ class QaDemoScenarioSeeder extends Seeder
         $hei = User::where('email', 'suc.official@example.test')->firstOrFail();
         $reviewer = User::where('email', 'ched.reviewer@example.test')->firstOrFail();
         $director = User::where('email', 'ched.director@example.test')->firstOrFail();
-        $policy = PolicyVersion::where('code', PolicyRules::CMO_CODE)->firstOrFail();
+        $policy = app(PolicyRules::class)->forDraft(PolicyVersion::where('code', PolicyRules::CMO_CODE)->firstOrFail());
         foreach (['annual', 'category2', 'completed', 'incident'] as $name) {
             $activity = Activity::where('institution_id', $institution->id)->where('title', 'QA '.$name)->firstOrFail();
             $submission = Submission::whereHas('activityVersions', fn ($query) => $query->where('activity_versions.activity_id', $activity->id))->first();

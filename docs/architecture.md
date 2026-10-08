@@ -19,6 +19,8 @@ LAKBAY is one modular Laravel application, with two Filament panels and a public
 
 ## Integrity and authorization
 
+Gap #1 correction: ordinary Category 3 excludes SAA; escalated Category 3 resolves Category 2 rules. The additive `lakbay:correct-saa` command defaults to dry-run and copies existing rules/templates into a candidate successor without updating historical rows. New draft forms follow `parameters.supersedes_policy_version_id`; corrections retain their original baseline. See decisions.md for recomputation, evidence reuse and history guarantees.
+
 Activity details create immutable versions. Submission freezes exact versions, evidence, document hashes and policy/holiday references before review. Corrections create new revisions. Acknowledgment references one revision and does not authorize implementation.
 
 Database transactions and row locks protect state-changing actions; unique constraints protect acknowledgment/reconsideration limits. Model guards prevent application-level historical edits. Database administrators must use separate operational credentials; those guards cannot prevent direct SQL by privileged operators.

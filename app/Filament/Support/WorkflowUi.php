@@ -57,6 +57,7 @@ use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Illuminate\Validation\ValidationException;
 
 class WorkflowUi
@@ -339,13 +340,16 @@ class WorkflowUi
         return $record instanceof Calendar ? $record->activities()->with('latestVersion')->get()->pluck('latestVersion')->filter() : collect([$record->latestVersion])->filter();
     }
 
-    private static function evidenceSchema($record, ?int $policyId): array
+    private static function evidenceSchema($record, ?int $policyId, ?int $previousId = null): array
     {
         if (! $policyId) {
             return [];
         } $policy = PolicyVersion::find($policyId);
         if (! $policy) {
             return [];
+        }
+        if (! $previousId) {
+            $policy = app(PolicyRules::class)->forDraft($policy);
         }
         $rules = collect();
         $stage = $record instanceof Calendar ? 'annual_calendar' : 'pre_activity';
@@ -380,15 +384,29 @@ class WorkflowUi
                 ->color('danger'),
             Text::make($record instanceof Calendar ? 'CMO 24: annual calendar package. Submit later pre-activity evidence from each activity.' : 'CMO 24: pre-activity package. Category 1 requires a recorded annual calendar package first.'),
             Text::make('A frozen revision will be created. Documents selected here must cover every included activity. Late submissions are recorded and flagged.'),
-            Select::make('policy_id')->options(fn () => PolicyVersion::query()->when(! (app()->environment(['local', 'testing']) && config('lakbay.allow_draft_policy')), fn ($q) => $q->where('status', 'confirmed'))->pluck('title', 'id'))->required()->live(),
-            Select::make('previous_id')->label('Previous correction request (optional)')->options(fn () => Submission::where('institution_id', $record->institution_id)->where('status', 'corrections_requested')->where('calendar_id', $record instanceof Calendar ? $record->id : null)->pluck('reference', 'id')),
+            Select::make('policy_id')->options(fn () => PolicyVersion::query()->when(! (app()->environment(['local', 'testing']) && config('lakbay.allow_draft_policy')), fn ($q) => $q->where('status', 'confirmed'))->pluck('title', 'id'))->required()->live()
+                ->afterStateUpdated(function (Select $component, $state, Get $get) {
+                    if ($state && ! $get('previous_id')) {
+                        $component->state(app(PolicyRules::class)->forDraft(PolicyVersion::findOrFail($state))->id);
+                    }
+                    $component->getContainer()->getComponent('submissionEvidence')->getChildSchema()->fill();
+                }),
+            Select::make('previous_id')->label('Previous correction request (optional)')->options(fn () => Submission::where('institution_id', $record->institution_id)->where('status', 'corrections_requested')->where('calendar_id', $record instanceof Calendar ? $record->id : null)->pluck('reference', 'id'))
+                ->live()->afterStateUpdated(function (Select $component, $state, Set $set, Get $get) {
+                    if ($state) {
+                        $set('policy_id', Submission::findOrFail($state)->policy_version_id);
+                    } elseif ($get('policy_id')) {
+                        $set('policy_id', app(PolicyRules::class)->forDraft(PolicyVersion::findOrFail($get('policy_id')))->id);
+                    }
+                    $component->getContainer()->getComponent('submissionEvidence')->getChildSchema()->fill();
+                }),
             Select::make('certification_draft_id')->label('Matching certification draft to preserve (optional)')
                 ->options(fn () => CertificationDraft::where('institution_id', $record->institution_id)->where('academic_period_id', $record->academic_period_id)->pluck('title', 'id'))
                 ->helperText('Select the draft used for the signed certification covering this package. This preserves printable data; signed evidence and policy checklists remain separate.'),
             Select::make('saa_draft_id')->label('Matching SAA draft to preserve (optional)')
                 ->options(fn () => AccountabilityAffidavit::where('institution_id', $record->institution_id)->where('academic_period_id', $record->academic_period_id)->pluck('title', 'id'))
                 ->helperText('Select the draft used for the signed SAA covering this package. This preserves printable data; it does not replace the signed/notarized evidence upload.'),
-            Group::make()->schema(fn (Get $get) => self::evidenceSchema($record, $get('policy_id') ? (int) $get('policy_id') : null)),
+            Group::make()->key('submissionEvidence')->schema(fn (Get $get) => self::evidenceSchema($record, $get('policy_id') ? (int) $get('policy_id') : null, $get('previous_id') ? (int) $get('previous_id') : null)),
         ])->action(function ($record, array $data, Action $action) {
             $evidence = [];
             foreach (self::versions($record) as $v) {

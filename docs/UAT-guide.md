@@ -268,7 +268,7 @@ Sign in → **Set up two-factor authentication** → Authenticator app **Set up*
 | QA AY 2026-2027 | 2026-09-01 to 2027-08-31 | Annual deadline demonstration, not a real academic calendar |
 | QA annual CLOCA / QA annual | Category 1, annual intake submitted/late | Annual review, correction and later pre-activity package |
 | QA category2 | Category 2, corrections_requested | Primary correction/resubmission walkthrough |
-| QA category3 | Category 3, student-initiated, no escalation flags, unsubmitted | Ordinary Category 3 SAA and unresolved timing |
+| QA category3 | Category 3, student-initiated, no escalation flags, unsubmitted | No ordinary Category 3 SAA; other unresolved timing remains |
 | QA escalated3 | Declared Category 3, strenuous=true, requirement_category=2, unsubmitted | Preserve declared category while requiring Category 2 evidence |
 | QA completed | Category 2, acknowledged, completed; ROC exists | Signed letter and 72-hour completion checks |
 | QA incident | Category 2 submission, initial notice at 49 hours, late | Initial notice, supplement, 48-hour deadline |
@@ -386,7 +386,7 @@ The modal supplies the applicable rows. Several rows legitimately reuse qa-certi
 | 7 invitation | invitation copy | Only External invitation ON; upload fictional PDF as External Invitation; need not mark signed |
 | 8 coordination | qa-lgu_coordination.pdf | Categories 2–3; copy allowed |
 | 9 DOT | accommodation/venue evidence | Only accommodation or venue accreditation flag; upload under DOT Accreditation Evidence |
-| 10 SAA | qa-saa.pdf | All three categories |
+| 10 SAA | qa-saa.pdf | Categories 1–2, including Category 3 treated as Category 2; not ordinary Category 3 |
 | 11 authorization | qa-certification.pdf | Categories 1–2 |
 | 12 PIC | qa-pic_designation.pdf | Also qa-first_aid.pdf; Category 1–2, plus personnel qualifications |
 | 13 RACP / 14 diagnostic certification | qa-certification.pdf | All categories; accomplished assessments retained/requested separately |
@@ -403,7 +403,7 @@ Role: private.official. On a fresh Category 2 or escalated Category 3 plan/packa
 
 ### HEI-08 — Category 2 and ordinary Category 3 requirements
 
-Role: suc.official. Activity plans → View QA category3 → Submit / resubmit → candidate. Expected: declared/requirement category 3, SAA present, Category 3 timing on relevant rows unresolved, no Category 1 annual-calendar block. Retained diagnostic/RACP references present. Inspect a Category 2 plan similarly: CLOCA/SAA/PADP/PIC, applicable invitation/DOT, itinerary/notification/orientation are present. Cancel inspection or submit with all corresponding evidence. For a fresh Category 2 plan choose HEI or External initiator appropriately; an invitation alone is not automatic classification. Actual: ____ Status: ____ Notes: ____
+Role: suc.official. Activity plans → View QA category3 → Submit / resubmit → corrected candidate. Expected: declared/requirement category 3, no SAA requirement, Category 3 timing on other relevant rows unresolved, no Category 1 annual-calendar block. Retained diagnostic/RACP references present. Inspect a Category 2 plan similarly: CLOCA/SAA/PADP/PIC, applicable invitation/DOT, itinerary/notification/orientation are present. Cancel inspection or submit with all corresponding evidence. For a fresh Category 2 plan choose HEI or External initiator appropriately; an invitation alone is not automatic classification. Actual: ____ Status: ____ Notes: ____
 
 ### HEI-09 — Category 3 treatment and explicit reclassification
 
@@ -766,7 +766,7 @@ The ten most important checks first:
 4. HEI-05/HEI-06: annual versus pre-activity submission stages.
 5. HEI-07: missing/duplicate evidence and immutable snapshots.
 6. E2E-01: correction → revision → complete → signed acknowledgment.
-7. HEI-08/HEI-09: Category 3 SAA and Category 2 treatment.
+7. HEI-08/HEI-09: no ordinary Category 3 SAA; Category 2 treatment retains SAA.
 8. HEI-10: PIC ratios/qualifications/contracts.
 9. HEI-16/HEI-17: late incident intake, supplements, 48/72-hour anchors.
 10. SEC-05/CHED-11: confidential access and exact-version external clearance.

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Actions\Activities\SaveActivity;
+use App\Actions\Activities\SaveCertificationDraft;
 use App\Actions\Documents\RequestEvidence;
 use App\Actions\Documents\UploadDocument;
 use App\Actions\Operations\ManageRegionalReport;
@@ -11,10 +12,13 @@ use App\Actions\Operations\RecordClearanceRouting;
 use App\Actions\Operations\RecordOperationalRecord;
 use App\Actions\Reports\SubmitReport;
 use App\Actions\Submissions\ConfirmPolicy;
+use App\Actions\Submissions\CorrectSaaPolicy;
 use App\Actions\Submissions\IssueAcknowledgment;
 use App\Actions\Submissions\ReviewSubmission;
 use App\Actions\Submissions\SubmitActivity;
 use App\Actions\Submissions\SubmitCalendar;
+use App\Filament\Ched\Resources\Pages\ViewSubmission;
+use App\Filament\Hei\Resources\Pages\ListActivity;
 use App\Filament\Hei\Resources\Pages\ListCalendar;
 use App\Jobs\GenerateExport;
 use App\Models\AcademicPeriod;
@@ -40,6 +44,7 @@ use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -158,7 +163,7 @@ class Cmo24AlignmentTest extends TestCase
         $all = [1, 2, 3];
 
         return array_map(fn ($row, $categories) => [$row, $categories], range(1, 22),
-            [$all, $all, [1], [1, 2], [1, 2], $all, [2, 3], [2, 3], [2, 3], $all, [1, 2], [1, 2], $all, $all, [2, 3], $all, $all, [2, 3], [3], $all, $all, $all]);
+            [$all, $all, [1], [1, 2], [1, 2], $all, [2, 3], [2, 3], [2, 3], [1, 2], [1, 2], [1, 2], $all, $all, [2, 3], $all, $all, [2, 3], [3], $all, $all, $all]);
     }
 
     #[DataProvider('categoryRows')]
@@ -256,14 +261,209 @@ class Cmo24AlignmentTest extends TestCase
         $this->assertSame('2026-10-31 23:59', $due->timezone('Asia/Manila')->format('Y-m-d H:i'));
     }
 
-    public function test_category_three_saa_is_required_with_unresolved_deadline(): void
+    public function test_ordinary_category_three_completeness_passes_without_saa(): void
     {
         $activity = $this->activity(3);
         $s = $this->submit($activity);
-        $saa = $s->requirements()->whereHas('policyRequirement', fn ($q) => $q->where('section_row', 10))->firstOrFail();
-        $this->assertNull($saa->due_at);
-        $this->assertSame('unresolved', $saa->rule_snapshot['deadline_status']);
+        $this->assertFalse($s->requirements()->whereHas('policyRequirement', fn ($q) => $q->where('section_row', 10))->exists());
+        $this->assertSame(0, Document::whereHas('documentType', fn ($q) => $q->where('code', 'saa'))->count());
         $this->assertSame(3, $s->snapshot['activities'][0]['category']);
+    }
+
+    public static function saaEscalationTriggers(): array
+    {
+        return array_map(fn ($trigger) => [$trigger], ['strenuous', 'requires_accommodation', 'long_distance', 'class_size', 'vulnerable_participants']);
+    }
+
+    #[DataProvider('saaEscalationTriggers')]
+    public function test_each_category_three_escalation_requires_saa(string $trigger): void
+    {
+        $activity = $this->activity(3, ['conditions' => [$trigger => true, 'requires_physical_activity' => false, 'requires_travel' => false]]);
+        $version = $activity->latestVersion;
+        $this->assertSame(3, $version->category);
+        $this->assertSame(2, $version->requirement_category);
+        $this->assertSame(2, app(RequirementResolver::class)->requirementCategory(3, [$trigger => true]));
+        $rule = app(RequirementResolver::class)->resolve($version, $this->policy, 'pre_activity')->firstWhere('section_row', 10);
+        $this->assertNotNull($rule);
+        $evidence = $this->evidence($activity, 'pre_activity');
+        unset($evidence[$version->id][$rule->id]);
+        try {
+            app(SubmitActivity::class)->execute($this->hei, [$activity->id], $this->policy->id, $evidence);
+            $this->fail('Escalated Category 3 submitted without an SAA.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('evidence', $exception->errors());
+        }
+        $this->assertSame(0, Submission::count());
+        $submission = $this->submit($activity);
+        $this->assertTrue($submission->requirements()->where('policy_requirement_id', $rule->id)->exists());
+    }
+
+    public function test_category_one_and_two_still_require_saa(): void
+    {
+        foreach ([1 => 'annual_calendar', 2 => 'pre_activity'] as $category => $stage) {
+            $activity = $this->activity($category);
+            $version = $activity->latestVersion;
+            $rule = app(RequirementResolver::class)->resolve($version, $this->policy, $stage)->firstWhere('section_row', 10);
+            $this->assertNotNull($rule);
+            $evidence = $this->evidence($activity, $stage);
+            unset($evidence[$version->id][$rule->id]);
+            try {
+                app(SubmitActivity::class)->execute($this->hei, [$activity->id], $this->policy->id, $evidence, $category === 1 ? $this->calendar->id : null);
+                $this->fail('Category '.$category.' submitted without SAA.');
+            } catch (ValidationException $exception) {
+                $this->assertArrayHasKey('evidence', $exception->errors());
+            }
+            $submission = $this->submit($activity);
+            $this->assertTrue($submission->requirements()->where('policy_requirement_id', $rule->id)->exists());
+        }
+    }
+
+    private function restoreHistoricalSaaRule(): void
+    {
+        $rule = $this->policy->requirements()->where('section_row', 10)->where('category', 2)->firstOrFail()->replicate();
+        $rule->category = 3;
+        $rule->deadline_status = 'unresolved';
+        $rule->save();
+    }
+
+    public function test_additive_correction_preserves_all_historical_records_and_verdicts(): void
+    {
+        $this->restoreHistoricalSaaRule();
+        $activity = $this->activity(3);
+        $items = [];
+        foreach (config('certification.rows') as $code => $row) {
+            $items[$code] = ['status' => 'attested', 'supporting' => array_fill_keys(array_keys($row['supporting']), true)];
+        }
+        $this->institution->update(['address' => 'Fictional Calamba address']);
+        $certification = app(SaveCertificationDraft::class)->execute($this->hei, [
+            'institution_id' => $this->institution->id, 'academic_period_id' => $this->calendar->academic_period_id,
+            'title' => 'Historical certification', 'details' => ['official' => 'HEI official', 'position' => 'President', 'items' => $items],
+        ]);
+        $submission = app(SubmitActivity::class)->execute($this->hei, [$activity->id], $this->policy->id, $this->evidence($activity, 'pre_activity'), certificationDraftId: $certification->id);
+        app(ReviewSubmission::class)->execute($this->staff('ched_reviewer'), $submission, 'complete', 'Historical complete verdict');
+        app(IssueAcknowledgment::class)->execute($this->staff('ched_signatory'), $submission, [
+            'document_id' => $this->document('acknowledgment')->id, 'reference' => 'HISTORICAL-SAA',
+            'recipient' => 'HEI', 'signatory' => 'Director', 'letter_date' => '2026-10-07',
+        ]);
+        $tables = ['submissions', 'submission_requirements', 'submission_activities', 'submission_reviews', 'acknowledgments', 'audit_events', 'certification_drafts'];
+        $before = [];
+        foreach ($tables as $table) {
+            $before[$table] = DB::table($table)->orderBy('id')->get()->toJson();
+        }
+        $originalPolicy = $this->policy->fresh()->toArray();
+        $originalRules = $this->policy->requirements()->orderBy('id')->get()->toJson();
+        $action = app(CorrectSaaPolicy::class);
+        $this->assertSame(1, $action->plan($this->policy)['historical_submissions_preserved']);
+        $this->artisan('lakbay:correct-saa')->expectsOutputToContain('Dry-run only')->assertSuccessful();
+        $this->assertSame(2, PolicyVersion::count());
+        $successor = $action->execute($this->policy);
+        $this->assertNotSame($this->policy->id, $successor->id);
+        $this->assertSame('candidate', $successor->status);
+        $this->assertNull($successor->publication_on);
+        $this->assertSame($successor->id, $action->execute($this->policy)->id);
+        $this->assertSame(0, $action->plan($this->policy)['new_policy_versions']);
+        $this->assertSame($originalPolicy, $this->policy->fresh()->toArray());
+        $this->assertSame($originalRules, $this->policy->requirements()->orderBy('id')->get()->toJson());
+        foreach ($tables as $table) {
+            $this->assertSame($before[$table], DB::table($table)->orderBy('id')->get()->toJson(), $table.' was rewritten');
+        }
+        $this->assertTrue($submission->requirements()->whereHas('policyRequirement', fn ($q) => $q->where('section_row', 10))->exists());
+        $this->assertTrue($submission->fresh()->snapshot['annex_f']['details']['items']['authorization']['supporting']['saa']);
+        $reviewer = $this->staff('ched_reviewer');
+        $this->actingAs($reviewer);
+        Filament::setCurrentPanel(Filament::getPanel('ched'));
+        Livewire::test(ViewSubmission::class, ['record' => $submission->id])->assertSuccessful()->assertSee('Sworn Affidavit of Accountability');
+    }
+
+    public function test_old_open_draft_recomputes_in_filament_but_corrections_keep_old_rules(): void
+    {
+        $this->restoreHistoricalSaaRule();
+        $draft = $this->activity(3);
+        $oldSubmission = $this->submit($this->activity(3));
+        app(ReviewSubmission::class)->execute($this->staff('ched_reviewer'), $oldSubmission, 'corrections_requested', 'Preserve the original checklist');
+        $this->assertSame(1, app(CorrectSaaPolicy::class)->plan($this->policy)['ordinary_category_3_drafts_recomputed_on_open']);
+        $newPolicy = app(CorrectSaaPolicy::class)->execute($this->policy);
+        $this->assertSame($newPolicy->id, app(PolicyRules::class)->forDraft($this->policy)->id);
+        $this->actingAs($this->hei);
+        Filament::setCurrentPanel(Filament::getPanel('hei'));
+        $this->policy = $newPolicy;
+        $evidence = $this->evidence($draft, 'pre_activity')[$draft->latestVersion->id];
+        Livewire::test(ListActivity::class)->callAction(TestAction::make('submit')->table($draft), data: [
+            'policy_id' => $newPolicy->id, 'evidence' => $evidence,
+        ])->assertHasNoActionErrors();
+        $newSubmission = Submission::whereHas('activityVersions', fn ($q) => $q->where('activity_versions.activity_id', $draft->id))->firstOrFail();
+        $this->assertFalse($newSubmission->requirements()->whereHas('policyRequirement', fn ($q) => $q->where('section_row', 10))->exists());
+        $this->policy = $oldSubmission->policyVersion;
+        $oldActivity = Activity::findOrFail($oldSubmission->snapshot['activities'][0]['activity_id']);
+        $correction = app(SubmitActivity::class)->execute($this->hei, [$oldActivity->id], $this->policy->id, $this->evidence($oldActivity, 'pre_activity'), previousId: $oldSubmission->id);
+        $this->assertSame($oldSubmission->policy_version_id, $correction->policy_version_id);
+        $this->assertTrue($correction->requirements()->whereHas('policyRequirement', fn ($q) => $q->where('section_row', 10))->exists());
+    }
+
+    public function test_category_three_review_screen_and_annex_f_do_not_require_saa(): void
+    {
+        $items = [];
+        foreach (config('certification.rows') as $code => $row) {
+            $items[$code] = ['status' => 'attested', 'supporting' => array_fill_keys(array_keys($row['supporting']), true)];
+        }
+        $items['authorization'] = ['status' => 'not_applicable', 'reason' => 'Ordinary Category 3: SAA not required under Section 14 row 10.', 'supporting' => ['saa' => false]];
+        $this->institution->update(['address' => 'Fictional Calamba address']);
+        $draft = app(SaveCertificationDraft::class)->execute($this->hei, [
+            'institution_id' => $this->institution->id, 'academic_period_id' => $this->calendar->academic_period_id,
+            'title' => 'Ordinary Category 3 certification', 'details' => ['official' => 'HEI official', 'position' => 'President', 'items' => $items],
+        ]);
+        $this->actingAs($this->hei);
+        $this->get(route('certification.draft', $draft))->assertOk()->assertSee('SAA not required under Section 14 row 10.')->assertDontSee('Sworn Affidavit of Accountability (SAA): availability not attested');
+        $activity = $this->activity(3);
+        $submission = app(SubmitActivity::class)->execute($this->hei, [$activity->id], $this->policy->id, $this->evidence($activity, 'pre_activity'), certificationDraftId: $draft->id);
+        $this->assertFalse($submission->snapshot['annex_f']['details']['items']['authorization']['supporting']['saa']);
+        $reviewer = $this->staff('ched_reviewer');
+        $this->actingAs($reviewer);
+        Filament::setCurrentPanel(Filament::getPanel('ched'));
+        Livewire::test(ViewSubmission::class, ['record' => $submission->id])->callAction('review', data: ['outcome' => 'complete', 'remarks' => 'Complete without ordinary Category 3 SAA'])->assertHasNoActionErrors();
+        $this->assertSame('ready_for_acknowledgment', $submission->fresh()->status);
+    }
+
+    public function test_same_on_file_saa_can_cover_two_escalated_activities_in_the_same_term(): void
+    {
+        $shared = null;
+        foreach (range(1, 2) as $number) {
+            $activity = $this->activity(3, ['title' => 'Escalated visit '.$number, 'conditions' => [
+                'strenuous' => true, 'requires_physical_activity' => false, 'requires_travel' => false,
+            ]]);
+            $rule = app(RequirementResolver::class)->resolve($activity->latestVersion, $this->policy, 'pre_activity')->firstWhere('section_row', 10);
+            $evidence = $this->evidence($activity, 'pre_activity');
+            $shared ??= $evidence[$activity->latestVersion->id][$rule->id]['document_ids'][0];
+            $evidence[$activity->latestVersion->id][$rule->id]['document_ids'] = [$shared];
+            $submission = app(SubmitActivity::class)->execute($this->hei, [$activity->id], $this->policy->id, $evidence);
+            $this->assertSame([$shared], $submission->requirements()->where('policy_requirement_id', $rule->id)->firstOrFail()->document_ids);
+        }
+    }
+
+    public function test_category_one_annual_intake_remains_valid_across_the_saa_only_correction(): void
+    {
+        $this->restoreHistoricalSaaRule();
+        $activity = $this->activity(1);
+        $annual = $this->submit($activity);
+        $new = app(CorrectSaaPolicy::class)->execute($this->policy);
+        $this->assertSame([$new->id, $this->policy->id], app(PolicyRules::class)->compatibleAnnualBaselines($new));
+        $this->policy = $new;
+        $pre = app(SubmitActivity::class)->execute($this->hei, [$activity->id], $new->id, $this->evidence($activity, 'pre_activity'));
+        $this->assertSame($new->id, $pre->policy_version_id);
+        $this->assertNotSame($new->id, $annual->fresh()->policy_version_id);
+        $changed = $new->requirements()->where('category', 1)->where('stage', 'annual_calendar')->firstOrFail();
+        $changed->update(['deadline_amount' => $changed->deadline_amount + 1]);
+        $this->assertSame([$new->id], app(PolicyRules::class)->compatibleAnnualBaselines($new));
+    }
+
+    public function test_stale_new_submission_is_rejected_and_public_guidance_is_correct(): void
+    {
+        $this->restoreHistoricalSaaRule();
+        $activity = $this->activity(3);
+        app(CorrectSaaPolicy::class)->execute($this->policy);
+        $this->get('/guidelines')->assertOk()->assertSee('Ordinary Category 3 does not require SAA.')->assertSee('including SAA');
+        $this->expectException(ValidationException::class);
+        app(SubmitActivity::class)->execute($this->hei, [$activity->id], $this->policy->id, []);
     }
 
     public static function picBoundaries(): array

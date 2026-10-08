@@ -21,6 +21,11 @@ class PolicyVersion extends Model
         return $this->hasMany(PolicyRequirement::class);
     }
 
+    public function formTemplates(): HasMany
+    {
+        return $this->hasMany(FormTemplate::class);
+    }
+
     protected static function booted(): void
     {
         static::updating(function ($model) {

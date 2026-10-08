@@ -72,7 +72,7 @@ class Cmo24PolicySeeder extends Seeder
                 7 => ['External invitation', 'invitation', [2, 3], 'external_invitation', 9],
                 8 => ['LGU coordination', 'lgu_coordination', [2, 3], 'always', 9],
                 9 => ['Accommodation or venue DOT accreditation information', 'dot_accreditation', [2, 3], 'venue_accreditation', 9],
-                10 => ['Sworn Affidavit of Accountability', 'saa', [1, 2, 3], 'always', 9],
+                10 => ['Sworn Affidavit of Accountability', 'saa', [1, 2], 'always', 9],
                 11 => ['Authorized HEI approval', 'certification', [1, 2], 'always', 9],
                 12 => ['PIC designation, first-aid training and ratio', 'pic_designation', [1, 2], 'always', 10],
                 13 => ['RACP certification and retained assessment', 'certification', [1, 2, 3], 'always', 10],
@@ -90,7 +90,7 @@ class Cmo24PolicySeeder extends Seeder
                 foreach ($categories as $category) {
                     $annual = $category === 1 && in_array($row, [1, 2, 3, 4, 5, 6, 10, 11, 12], true);
                     $post = $row >= 20;
-                    $unresolved = ($category === 3 && in_array($row, [1, 2, 6, 10], true)) || $row === 22;
+                    $unresolved = ($category === 3 && in_array($row, [1, 2, 6], true)) || $row === 22;
                     $this->rule($policy, 'cmo24_row_'.$row, $title, $document, $row, $category, [
                         'predicate' => $predicate, 'stage' => $post ? 'post_activity' : ($annual ? 'annual_calendar' : 'pre_activity'),
                         'signature_mode' => in_array($row, [7, 8, 9, 12, 17], true) ? 'copy' : 'signed',

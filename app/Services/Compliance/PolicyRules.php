@@ -9,6 +9,7 @@ use App\Models\PolicyRequirement;
 use App\Models\PolicyVersion;
 use App\Models\Submission;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 
 class PolicyRules
@@ -18,6 +19,39 @@ class PolicyRules
     public static function isCmo(?PolicyVersion $policy): bool
     {
         return $policy && ($policy->code === self::CMO_CODE || ($policy->parameters['source_cmo'] ?? null) === 24);
+    }
+
+    public function forDraft(PolicyVersion $policy): PolicyVersion
+    {
+        $visited = [];
+        while ($next = PolicyVersion::where('parameters->supersedes_policy_version_id', $policy->id)->latest('id')->first()) {
+            if (isset($visited[$next->id])) {
+                throw new \LogicException('Policy successor cycle.');
+            }
+            $visited[$policy->id] = true;
+            $policy = $next;
+        }
+
+        return $policy;
+    }
+
+    /** @return list<int> */
+    public function compatibleAnnualBaselines(PolicyVersion $policy): array
+    {
+        $ids = [$policy->id];
+        $annual = static fn (PolicyVersion $version) => $version->requirements()->where('category', 1)->where('stage', 'annual_calendar')
+            ->orderBy('requirement_definition_id')->get()->map(fn ($rule) => Arr::except($rule->getAttributes(), ['id', 'policy_version_id', 'created_at', 'updated_at']))->all();
+        $expected = $annual($policy);
+        while ($sourceId = $policy->parameters['supersedes_policy_version_id'] ?? null) {
+            $source = PolicyVersion::find($sourceId);
+            if (! $source || in_array($source->id, $ids, true) || $annual($source) !== $expected) {
+                break;
+            }
+            $ids[] = $source->id;
+            $policy = $source;
+        }
+
+        return $ids;
     }
 
     public static function hasVerifiedActivation(PolicyVersion $policy): bool

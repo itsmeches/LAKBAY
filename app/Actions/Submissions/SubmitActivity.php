@@ -42,6 +42,9 @@ class SubmitActivity
             app(Access::class)->authorize($actor, $institutionId, 'submissions.submit', true);
             abort_unless($activities->every(fn ($a) => $a->institution_id === $institutionId), 403);
             $policy = PolicyVersion::findOrFail($policyId);
+            if (! $previousId && app(PolicyRules::class)->forDraft($policy)->id !== $policy->id) {
+                throw ValidationException::withMessages(['policy' => 'A corrected policy version is available. Reopen the submission form and select it to recompute the draft checklist.']);
+            }
             app(PolicyRules::class)->authorizeSubmission($policy);
             $cmo = PolicyRules::isCmo($policy);
             $stage ??= $cmo ? ($calendarId ? 'annual_calendar' : 'pre_activity') : 'legacy';
@@ -89,7 +92,7 @@ class SubmitActivity
                         throw ValidationException::withMessages(['readiness' => implode(' ', $issues)]);
                     }
                     if ($stage === 'pre_activity' && $v->category === 1 && ! Submission::where('calendar_id', $v->activity->calendar_id)
-                        ->where('institution_id', $institutionId)->where('stage', 'annual_calendar')->where('policy_version_id', $policyId)
+                        ->where('institution_id', $institutionId)->where('stage', 'annual_calendar')->whereIn('policy_version_id', app(PolicyRules::class)->compatibleAnnualBaselines($policy))
                         ->whereNotIn('status', ['superseded', 'withdrawn'])->whereHas('activityVersions', fn ($q) => $q->where('activity_versions.activity_id', $v->activity_id))->exists()) {
                         throw ValidationException::withMessages(['calendar' => 'Record the Category 1 annual calendar submission before its pre-activity evidence.']);
                     }

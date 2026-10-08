@@ -41,6 +41,9 @@ class CertificationForms
                     ->helperText('Confirm that this supporting document is complete and available. This is not an upload or verification.');
             }
             $description = $row['requirement'];
+            if ($code === 'authorization') {
+                $description .= ' SAA applies to Categories 1 and 2, including Category 3 treated as Category 2. For ordinary Category 3, use explained N/A for this row; record its faculty/HEI authorization separately. Existing signed SAA evidence covering the HEI term may be reused; term coverage remains pending CHED confirmation.';
+            }
             if (isset($row['particulars'])) {
                 $description .= ' '.implode('; ', $row['particulars']).'. '.$row['note'];
             }
