@@ -1,6 +1,6 @@
 # LAKBAY — CMO conformance fix backlog
 
-Original read-only audit, 8 October 2026. Subsequent authorized work implements FIX-01 and FIX-02 slices 1–3; FIX-02 remains PARTIAL pending CHED interpretation and production verification. Other fixes remain proposed. The [final-CMO delta check](cmo-final-delta-check.md) updates findings only. Preserve current accounts, policy history, snapshots and signed originals. Publication remains unverified and CMO 24 must stay a candidate.
+Original read-only audit, 8 October 2026. Subsequent authorized work implements FIX-01, FIX-02 slices 1–3 and the scoped FIX-03 personnel readiness delivery (12 October). FIX-02/03 retain explicit CHED and production-verification questions. Other fixes remain proposed. The [final-CMO delta check](cmo-final-delta-check.md) updates findings only. Preserve current accounts, policy history, snapshots and signed originals. Publication remains unverified and CMO 24 must stay a candidate.
 
 This accompanies [the report](CMO-conformance-report.md) and [traceability matrix](traceability-matrix.csv). Severity is an impact assessment. CHED decisions are not code defects; external procedural records do not imply transferring legal authority to software.
 
@@ -54,13 +54,66 @@ Actual normal/QA application: each added 1 candidate policy, 64 rules and 13 tem
 
 ## FIX-03 — Complete personnel qualification checks
 
+**12 October 2026 delivery:** APIC employment, accompaniment, relevant qualifications/experience and basic first-aid knowledge now participate in shared CMO readiness and filing checks for Category 1/2 treatment, including escalated Category 3. Drafts remain saveable with missing particulars; the filing failure identifies the APIC and missing fields. APIC designation remains optional, APICs are excluded from PIC ratios, and no APIC training-proof upload is required. A nullable additive column stores knowledge without historical backfill; existing positive training declarations supply knowledge only when that new field is null. New versions/snapshots carry the declaration; submitted snapshots and verdicts remain unchanged. Sources: final CMO No. 24 §12.G/H, PDF pp.5–6; §14 row 12, PDF p.10; Annex F, PDF p.25. Scope for optional PIC/APIC in ordinary Category 3 remains a CHED question in `open-questions.md`; overall FIX-03 remains PARTIAL for that decision and production verification.
+
+Focused regression coverage passed 27 tests/85 assertions. Full PHPUnit passed **476/476, 2,290 assertions**. Coverage includes each missing APIC attribute, all five escalation triggers, Categories 1–2, ordinary Category 3 supervisor-only staffing, PIC ratios, APIC knowledge without training proof, legacy positive training declarations without backfill, actual Filament form persistence, and immutable filed personnel/verdicts after later changes. No ordinary Category 3 PIC requirement, APIC ratio counting, policy activation, historical rewrite, authentication/throttle change or normal-database migration is included. The normal installation needs the new additive migration through the backed-up deployment process; only disposable test/QA copies were migrated.
+
+**Executed verification, 12 October:** ignored artifacts are under `storage/app/fix03/`. Installed APIs: Laravel 13.34.0, Filament 5.9.0, PHP 8.4. Pint/PHPStan pass; PHP syntax checks pass for 383 files; JavaScript syntax and diff whitespace checks pass. The referenced testing-best-practices skill was not available in the installed skill directories; tests follow the existing PHPUnit/Livewire fixture conventions.
+
+```text
+php -c storage/app/verification-triage/current.ini vendor/bin/phpunit --log-junit storage/app/fix03/phpunit.xml
+PHPUNIT_EXIT=0
+{"tool":"phpunit","result":"passed","tests":476,"passed":476,"assertions":2290,"duration_ms":641843}
+php -c storage/app/verification-triage/current.ini vendor/bin/pint --dirty --format agent
+{"tool":"pint","result":"passed"}
+php -c storage/app/verification-triage/current.ini vendor/bin/phpstan analyse --no-progress --error-format=table
+PHPSTAN_EXIT=0
+{"tool":"phpstan","result":"passed","errors":0}
+PHP_LINT_FILES=383 ERRORS=0
+JS_SYNTAX_EXIT=0
+```
+
+The first full Chromium run passed **34/36 in 13.1m**, including the new APIC save/reopen/readiness scenario. Two existing reviewer scenarios failed: MFA navigation remained on login, and the correction-view body was incomplete. The latter has a logged `Maximum execution time of 30 seconds exceeded` in the compiled submission view during concurrent PHPUnit/browser work. After PHPUnit finished, both scenarios passed individually **2/2 in 23.9s** without changing application code, PHP timeouts, credentials, login helpers or throttle/MFA settings. The first MFA navigation failure's precise cause remains unproven; do not turn a successful retry into an authentication/load-readiness claim.
+
+Final complete Chromium run on a fresh disposable copy, without concurrent PHPUnit work:
+
+```text
+node node_modules/@playwright/test/cli.js test
+BROWSER_FINAL_EXIT=0
+ok 36 ... APIC knowledge saves without training proof and missing knowledge appears in readiness (18.4s)
+36 passed (6.9m)
+node node_modules/vite/bin/vite.js build
+BUILD_EXIT=0
+✓ built in 15.29s
+```
+
+The build retains the existing optional fontaine warning; no dependency was added. Browser artifacts preserve both initial failures and subsequent runs. MFA/scanner isolation remains real; no forced-clean evidence or real-recipient mail is used. The final history comparison, `preservation-final.json`, compares every original row by ID and original columns, with matching hashes for immutable groups:
+
+| Table | Before → after | Original changed / deleted |
+|---|---|---|
+| submissions | 6 → 6 | 0 / 0 |
+| submission_requirements | 69 → 69 | 0 / 0 |
+| acknowledgments | 2 → 2 | 0 / 0 |
+| submission_reviews | 5 → 5 | 0 / 0 |
+| activity_classifications | 19 → 23 | 0 / 0 |
+| activity_personnel | 19 → 25 | 0 / 0 |
+| certification_drafts | 2 → 2 | 1 / 0 |
+| audit_events | 205 → 235 | 0 / 0 |
+| policy_versions | 3 → 3 | 0 / 0 |
+
+The certification change is the existing browser scenario's unsigned editable draft, not a filed certification. Activity versions/personnel and audit events are appended by the classification and APIC scenarios. Submitted snapshots/verdicts and old personnel values remain unchanged; the new column is null on original rows.
+
+Migration dry run emits only a nullable `basic_first_aid_knowledge` column addition for this fix, with no UPDATE/backfill. In the disposable original QA copy: 19 existing personnel rows, zero APIC rows, zero original personnel values changed, zero backfilled values. Repeating `artisan migrate --no-interaction` after QA application reports `Nothing to migrate`. A read-only normal-database count found two personnel rows, zero APIC rows and no new column yet: one column is pending, zero rows need backfill. No normal migration ran. Exact count evidence is in `migration-preservation.json` and `normal-dry-run-counts.json`.
+
+PostgreSQL runtime/concurrency and production recovery remain unverified: neither Docker nor psql is on PATH. Local scanner testing remains distinct from PHPUnit's simulated document rows. Normal deployment requires database/private-file backup before migration; the migration refuses destructive rollback. FIX-04 and all other backlog work remain untouched.
+
 **Ordinary Category 3 PIC blocker fixed separately, 8 October 2026:** the save-time PIC guard now uses the resolved requirement category after classification/evaluation, matching `ActivityCompliance`. Ordinary Category 3 can be prepared/submitted with a supervising faculty member and no PIC; Categories 1–2 and all five escalated Category 3 triggers retain the PIC guard. Missing-PIC saves/revisions roll back atomically. No policy rows, historical records, APIC proof rules or Slice 3 UI changes were modified. Tests: `Cmo24AlignmentTest::test_ordinary_category_three_can_be_prepared_and_submitted_with_supervisor_only`, `test_applicable_pic_requirement_cannot_be_replaced_by_a_supervisor` (seven cases), `ClassificationEvaluationTest::test_confirmed_ordinary_category_three_can_use_supervisor_without_pic`. SEC14-R12-C3 is now IMPLEMENTED for designation applicability. Remaining personnel qualification questions in FIX-03 stay open; see [verification](ordinary-category3-pic-fix.md).
 
 **Priority/type:** Major — partial implementation.
 
 **Traceability:** SEC12-07–14.
 
-**Finding:** PIC qualification checks operate for requirement categories 1/2. Final-CMO delta confirms a contradiction: `SaveActivity.php:100–102` nevertheless requires role PIC for every ordinary Category 3 plan. Section 14 row 12, PDF p.10 marks only Categories 1–2; Category 3 supervision must not silently become mandatory PIC designation. Escalated Category 3 receives Category 2 rules. Traceability SEC14-R12-C3 changed IMPLEMENTED → CONTRADICTS. Existing fixtures contain PICs and do not test this absence case. No fix applied by the delta review.
+**Historical finding before the separate PIC fix:** PIC qualification checks operated for requirement categories 1/2, but the then-current `SaveActivity` required PIC designation for ordinary Category 3. The separate fix above resolved that contradiction; the 12 October delivery adds APIC readiness checks. Section 14 row 12, PDF p.10 marks only Categories 1–2; ordinary Category 3 remains supervisor-only capable. Optional named PIC/APIC qualification scope remains a CHED question rather than a silently expanded blocker.
 
 **Proposed task:** Remove the ordinary Category 3 universal-PIC blocker through an independently authorized change and add supervisor-only preparation coverage; retain applicable PIC requirements for Categories 1–2/escalated Category 3. Validate designated personnel employment, accompaniment and relevant experience where applicable. Section 12.H, PDF pp.5–6 requires APIC basic first-aid knowledge, but Annex F PDF p.25 names training proof only for PIC. Do not add mandatory APIC training-proof uploads without CHED confirmation. Keep APIC out of the PIC ratio unless CHED authorizes counting.
 
@@ -217,10 +270,10 @@ The table assigns every PARTIAL, MISSING, CONTRADICTS and NEEDS CHED DECISION en
 | SEC12-08 | PARTIAL | FIX-03 |
 | SEC12-09 | PARTIAL | FIX-03 |
 | SEC12-10 | PARTIAL | FIX-03 |
-| SEC12-11 | MISSING | FIX-03 |
-| SEC12-12 | MISSING | FIX-03 |
-| SEC12-13 | MISSING | FIX-03 |
-| SEC12-14 | MISSING | FIX-03 |
+| SEC12-11 | PARTIAL | FIX-03 |
+| SEC12-12 | PARTIAL | FIX-03 |
+| SEC12-13 | PARTIAL | FIX-03 |
+| SEC12-14 | PARTIAL | FIX-03 |
 | SEC13-02 | PARTIAL | FIX-02 |
 | SEC13-03 | PARTIAL | FIX-02 |
 | SEC13-05 | PARTIAL | FIX-02 |

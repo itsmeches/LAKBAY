@@ -26,6 +26,24 @@ class ActivityCompliance
                     $issues[] = 'Record HEI employment, accompaniment, relevant qualifications and first-aid evidence for '.$pic->name.'.';
                 }
             }
+            foreach ($version->personnel->where('role', 'apic') as $apic) {
+                $missing = [];
+                if (! $apic->hei_employed) {
+                    $missing[] = 'HEI employment';
+                }
+                if (! $apic->accompanies_activity) {
+                    $missing[] = 'accompaniment';
+                }
+                if (! trim($apic->qualifications ?? '')) {
+                    $missing[] = 'relevant qualifications or experience';
+                }
+                if (! ($apic->basic_first_aid_knowledge ?? $apic->first_aid_trained)) {
+                    $missing[] = 'basic first-aid knowledge';
+                }
+                if ($missing !== []) {
+                    $issues[] = 'APIC '.$apic->name.': record '.implode(', ', $missing).'. Basic knowledge does not require a separate APIC training-proof upload (Sec. 12.H, PDF pp.5–6).';
+                }
+            }
         }
         if ($preActivity && ($conditions['has_third_party_services'] ?? false)) {
             if (! $version->contracts) {

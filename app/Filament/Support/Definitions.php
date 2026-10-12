@@ -24,6 +24,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 
 class Definitions
 {
@@ -537,7 +538,17 @@ class Definitions
             foreach (['has_student_costs', 'requires_accommodation', 'external_invitation', 'strenuous', 'vulnerable_participants', 'hazardous_destination', 'long_distance', 'class_size', 'requires_physical_activity', 'requires_travel', 'venue_requires_accreditation', 'medical_clearance_relevant', 'has_third_party_services'] as $key) {
                 $fields[] = Toggle::make('conditions.'.$key)->default(false);
             }
-            $fields[] = Repeater::make('personnel')->schema([Select::make('role')->options(['pic' => 'PIC', 'apic' => 'APIC', 'supervisor' => 'Supervisor'])->required(), TextInput::make('name')->required(), TextInput::make('position')->required(), TextInput::make('contact')->required(), TextInput::make('qualifications'), Toggle::make('first_aid_trained'), Toggle::make('hei_employed'), Toggle::make('accompanies_activity'), TextInput::make('first_aid_reference')])->minItems(1)->defaultItems(1)->columnSpanFull();
+            $fields[] = Repeater::make('personnel')->schema([
+                Select::make('role')->options(['pic' => 'PIC', 'apic' => 'APIC', 'supervisor' => 'Supervisor'])->required()->live(),
+                TextInput::make('name')->required(), TextInput::make('position')->required(), TextInput::make('contact')->required(),
+                TextInput::make('qualifications')->label('Relevant qualifications or experience'),
+                Toggle::make('first_aid_trained')->label('First-aid training completed'),
+                Toggle::make('basic_first_aid_knowledge')->label('APIC basic first-aid knowledge')->visible(fn (Get $get) => $get('role') === 'apic')
+                    ->helperText('Confirm basic knowledge; a separate APIC training-proof upload is not required. Sec. 12.H, PDF pp.5–6; Annex F, PDF p.25.'),
+                Toggle::make('hei_employed')->label('Employed by the HEI'),
+                Toggle::make('accompanies_activity')->label('Accompanies participating students'),
+                TextInput::make('first_aid_reference')->label('PIC first-aid training evidence reference')->visible(fn (Get $get) => $get('role') === 'pic'),
+            ])->helperText('Categories 1/2 (including escalated Category 3): qualify every designated PIC/APIC. APICs do not count toward the PIC ratio. Ordinary Category 3 may use a supervising faculty member.')->minItems(1)->defaultItems(1)->columnSpanFull();
             $fields[] = Repeater::make('contracts')->schema([Fields::relation('document_id', Document::class, 'original_name'), TextInput::make('provider')->required(), TextInput::make('service')->required(), Fields::make('effective_from', 'date'), Fields::make('effective_until', 'optional_date')])->defaultItems(0)->columnSpanFull();
             foreach (['inclusivity', 'parallel_learning', 'grievance_mechanism', 'student_participation', 'emergency_preparedness', 'cost_consultation'] as $key) {
                 $fields[] = Fields::make('preparation.'.$key, 'optional_area');

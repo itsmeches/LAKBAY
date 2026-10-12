@@ -31,7 +31,7 @@ class SaveActivity
     public function execute(User $actor, array $data, ?Activity $activity = null): Activity
     {
         Validator::make($data, ['institution_id' => 'required|integer', 'academic_period_id' => 'required|integer', 'title' => 'required|string|max:255', 'category' => 'required|integer|between:1,3', 'academic_nature' => 'required|in:curricular,non_curricular', 'activity_type' => 'required|string|max:100', 'initiator' => 'required|in:hei,student,external', 'description' => 'required|string', 'learning_objectives' => 'required|string', 'responsible_office' => 'required|string|max:255', 'starts_at' => 'required|date', 'ends_at' => 'required|date|after:starts_at', 'venue' => 'required|string|max:255', 'student_count' => 'required|integer|min:1', 'conditions' => 'present|array:has_student_costs,requires_accommodation,external_invitation,strenuous,vulnerable_participants,hazardous_destination,long_distance,class_size,requires_physical_activity,requires_travel,venue_requires_accreditation,medical_clearance_relevant,has_third_party_services', 'conditions.*' => 'boolean', 'authorization' => 'required|array', 'personnel' => 'required|array|min:1', 'personnel.*.name' => 'required|string', 'personnel.*.role' => 'required|in:pic,apic,supervisor', 'personnel.*.position' => 'required|string', 'personnel.*.contact' => 'required|string',
-            'personnel.*.hei_employed' => 'sometimes|boolean', 'personnel.*.accompanies_activity' => 'sometimes|boolean', 'personnel.*.first_aid_trained' => 'sometimes|boolean',
+            'personnel.*.hei_employed' => 'sometimes|boolean', 'personnel.*.accompanies_activity' => 'sometimes|boolean', 'personnel.*.first_aid_trained' => 'sometimes|boolean', 'personnel.*.basic_first_aid_knowledge' => 'nullable|boolean',
             'personnel.*.first_aid_reference' => 'nullable|string|max:255', 'personnel.*.qualifications' => 'nullable|string',
             'contracts' => 'sometimes|nullable|array', 'contracts.*.document_id' => 'required|integer|exists:documents,id', 'contracts.*.provider' => 'required|string',
             'contracts.*.service' => 'required|string', 'contracts.*.effective_from' => 'required|date', 'contracts.*.effective_until' => 'nullable|date',
@@ -171,7 +171,7 @@ class SaveActivity
             }
             $version = ActivityVersion::create($fields + ['activity_id' => $activity->id, 'version' => ($activity->versions()->max('version') ?? 0) + 1, 'requirement_category' => $category, 'created_by' => $actor->id]);
             foreach ($data['personnel'] as $person) {
-                $version->personnel()->create(collect($person)->only(['role', 'name', 'position', 'contact', 'qualifications', 'first_aid_trained', 'hei_employed', 'accompanies_activity', 'first_aid_reference'])->all());
+                $version->personnel()->create(collect($person)->only(['role', 'name', 'position', 'contact', 'qualifications', 'first_aid_trained', 'basic_first_aid_knowledge', 'hei_employed', 'accompanies_activity', 'first_aid_reference'])->all());
             }
             foreach (array_values($itinerary) as $index => $item) {
                 $item['sequence'] = $index + 1;

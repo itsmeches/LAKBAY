@@ -1,5 +1,13 @@
 # LAKBAY implementation decisions
 
+## FIX-03 personnel readiness — 12 October 2026
+
+CMO No. 24 §12.G/H, PDF pp.5–6; §14 row 12, PDF p.10; Annex F, PDF p.25: for Category 1/2 requirement treatment, including escalated Category 3, check every designated APIC's HEI employment, accompaniment, relevant qualifications/experience and basic first-aid knowledge. APIC designation remains optional and APICs never replace PICs in the existing 1:30/1:50 ratio.
+
+Record APIC basic knowledge separately in a nullable additive personnel column. Basic knowledge is not a mandatory training-certificate upload. An existing positive training declaration supplies knowledge only when the new declaration is null; an explicit false knowledge declaration requires correction. No backfill of historical rows occurs. PIC training/evidence checks remain unchanged. Draft saving allows incomplete particulars; the shared readiness/submission checks report them before a new CMO filing. Newly submitted personnel snapshots preserve the declaration; existing snapshots/verdicts remain unchanged.
+
+Default pending CHED confirmation: retain the current Category 1/2 scope rather than impose new qualification blockers on optional ordinary Category 3 personnel. Ordinary Category 3 may still use supervisor-only staffing. See the recorded question in `open-questions.md`. No policy activation, APIC ratio counting or new proof requirement is inferred.
+
 ## Gap #2 Slice 2 — staged backend, 8 October 2026
 
 CMO No. 24 §§12–13, PDF pp.5–7; §16, PDF p.12; §§22/24, PDF p.13; Annex I, PDF p.29: shared backend evaluation compares original filed/HEI-authorized facts and immediate prior facts separately, recommends treatment and records an authorized confirmation. It preserves the declared category and old versions/receipts/verdicts. A revised Category 1 uses Category 2 requirements when configured changes warrant it; Category 3 uses the configured §13.C.5 triggers without changing declaration.

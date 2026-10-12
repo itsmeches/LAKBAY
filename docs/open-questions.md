@@ -1,5 +1,9 @@
 # Open CHED questions
 
+## Optional PIC/APIC in ordinary Category 3 — FIX-03
+
+CMO No. 24 §12.G/H, PDF pp.5–6 defines PIC/APIC qualifications, while §14 row 12, PDF p.10 requires designation only for Categories 1–2. Confirm whether qualification checks should apply to voluntarily named PIC/APIC in ordinary Category 3, or whether supervising faculty treatment suffices. The current conservative default checks Category 1/2 requirement treatment only (including §13.C.5 escalated Category 3, PDF p.7); it does not require ordinary Category 3 to name PIC/APIC. APIC basic knowledge is recorded without mandatory training-proof uploads; Annex F, PDF p.25 names training proof for PIC only. APIC counting remains a separate unresolved decision.
+
 ## Final CMO Category 3 timelines — rows 1, 2 and 6
 
 CMO No. 24, s.2026 §14 row 1, PDF p.7; row 2, PDF p.8; row 6, PDF p.9: all mark Category 3, but timeline wording specifies Categories 1–2 only. Confirm the ordinary Category 3 deadline for these certifications, including conditional cost consultation. The candidate stores unresolved deadlines; do not silently assign the Category 2 three-working-day deadline to ordinary Category 3. Escalated Category 3 receives Category 2 treatment under §13.C.5, PDF p.7.

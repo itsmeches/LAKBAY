@@ -453,3 +453,32 @@ test('classification: HEI saves a recommendation and confirms the saved revision
     await expect(page.getByRole('dialog')).toContainText('Fictional authorized QA confirmation');
     await expect(page.getByRole('dialog')).toContainText('confirmed');
 });
+
+test('personnel: APIC knowledge saves without training proof and missing knowledge appears in readiness', async ({ page }) => {
+    await login(page);
+    await page.goto(`/hei/activities/${manifest.records.activity}/revise`);
+    await page.getByRole('button', { name: 'Add to personnel', exact: true }).click();
+    const personnel = page.getByRole('group', { name: 'Personnel', exact: true });
+    await personnel.getByRole('combobox', { name: /^Role/ }).nth(1).selectOption('apic');
+    await personnel.getByRole('textbox', { name: /^Name/ }).nth(1).fill('Fictional QA APIC');
+    await personnel.getByRole('textbox', { name: /^Position/ }).nth(1).fill('Faculty');
+    await personnel.getByRole('textbox', { name: /^Contact/ }).nth(1).fill('apic@example.test');
+    await personnel.getByRole('textbox', { name: 'Relevant qualifications or experience', exact: true }).nth(1).fill('Relevant activity experience');
+    for (const name of ['Employed by the HEI', 'Accompanies participating students']) {
+        await personnel.getByRole('switch', { name, exact: true }).nth(1).click();
+    }
+    await personnel.getByRole('switch', { name: 'APIC basic first-aid knowledge', exact: true }).click();
+    await expect(personnel.getByRole('textbox', { name: 'PIC first-aid training evidence reference', exact: true })).toHaveCount(1);
+    await page.getByRole('textbox', { name: 'Change / applicability explanation', exact: true }).fill('Fictional APIC readiness evidence; no APIC proof upload');
+    await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+    await expect(page.getByText('Saved', { exact: true })).toBeVisible();
+    await page.goto(`/hei/activities/${manifest.records.activity}/revise`);
+    await expect(page.getByRole('switch', { name: 'APIC basic first-aid knowledge', exact: true })).toHaveAttribute('aria-checked', 'true');
+    await page.getByRole('switch', { name: 'APIC basic first-aid knowledge', exact: true }).click();
+    await page.getByRole('textbox', { name: 'Change / applicability explanation', exact: true }).fill('Fictional missing-knowledge readiness check');
+    await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+    await expect(page.getByText('Saved', { exact: true })).toBeVisible();
+    await page.goto(`/hei/activities/${manifest.records.activity}`);
+    await page.getByRole('button', { name: 'Authorization / restrictions', exact: true }).click();
+    await expect(page.getByRole('dialog')).toContainText('APIC Fictional QA APIC: record basic first-aid knowledge');
+});

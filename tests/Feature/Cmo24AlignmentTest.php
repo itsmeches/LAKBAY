@@ -539,9 +539,95 @@ class Cmo24AlignmentTest extends TestCase
     {
         $activity = $this->activity(2, ['student_count' => 31, 'conditions' => ['requires_physical_activity' => true, 'requires_travel' => true],
             'personnel' => [['role' => 'pic', 'name' => 'Unqualified', 'position' => 'Faculty', 'contact' => 'test'], ['role' => 'apic', 'name' => 'APIC', 'position' => 'Faculty', 'contact' => 'test']]]);
-        $this->assertCount(2, app(ActivityCompliance::class)->issues($activity->latestVersion));
+        $this->assertCount(3, app(ActivityCompliance::class)->issues($activity->latestVersion));
         $this->expectException(ValidationException::class);
         $this->submit($activity);
+    }
+
+    private function personnelWithApic(array $overrides = []): array
+    {
+        return [
+            ['role' => 'pic', 'name' => 'Qualified PIC', 'position' => 'Faculty', 'contact' => 'pic@example.test', 'qualifications' => 'Relevant experience', 'hei_employed' => true, 'accompanies_activity' => true, 'first_aid_trained' => true, 'first_aid_reference' => 'PIC-TRAINING'],
+            array_replace(['role' => 'apic', 'name' => 'Qualified APIC', 'position' => 'Faculty', 'contact' => 'apic@example.test', 'qualifications' => 'Relevant experience', 'hei_employed' => true, 'accompanies_activity' => true, 'basic_first_aid_knowledge' => true, 'first_aid_trained' => false, 'first_aid_reference' => null], $overrides),
+        ];
+    }
+
+    public static function missingApicQualifications(): array
+    {
+        return [
+            'employment' => ['hei_employed', false, 'HEI employment'],
+            'accompaniment' => ['accompanies_activity', false, 'accompaniment'],
+            'experience' => ['qualifications', '  ', 'relevant qualifications or experience'],
+            'knowledge' => ['basic_first_aid_knowledge', false, 'basic first-aid knowledge'],
+        ];
+    }
+
+    #[DataProvider('missingApicQualifications')]
+    public function test_incomplete_apic_can_save_a_draft_but_cannot_file(string $field, mixed $value, string $message): void
+    {
+        $activity = $this->activity(2, ['personnel' => $this->personnelWithApic([$field => $value])]);
+        $issues = app(ActivityCompliance::class)->issues($activity->latestVersion);
+        $this->assertCount(1, $issues);
+        $this->assertStringContainsString('APIC Qualified APIC', $issues[0]);
+        $this->assertStringContainsString($message, $issues[0]);
+        $before = Submission::count();
+        try {
+            $this->submit($activity);
+            $this->fail('An incomplete APIC must block a new CMO filing.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('readiness', $exception->errors());
+            $this->assertSame($before, Submission::count());
+        }
+    }
+
+    #[DataProvider('picRequiredTreatments')]
+    public function test_apic_basic_knowledge_does_not_require_training_proof(int $category, array $conditions): void
+    {
+        $activity = $this->activity($category, ['conditions' => $conditions + ['requires_physical_activity' => false, 'requires_travel' => false], 'personnel' => $this->personnelWithApic()]);
+        $this->assertSame([], app(ActivityCompliance::class)->issues($activity->latestVersion));
+        $submission = $this->submit($activity);
+        $apic = $submission->snapshot['activities'][0]['personnel'][1];
+        $this->assertTrue($apic['basic_first_aid_knowledge']);
+        $this->assertFalse($apic['first_aid_trained']);
+        $this->assertNull($apic['first_aid_reference']);
+    }
+
+    public function test_legacy_apic_training_declaration_can_establish_basic_knowledge_without_backfill(): void
+    {
+        $activity = $this->activity(2, ['personnel' => $this->personnelWithApic(['basic_first_aid_knowledge' => null, 'first_aid_trained' => true])]);
+        $this->assertSame([], app(ActivityCompliance::class)->issues($activity->latestVersion));
+        $this->assertNull($activity->latestVersion->personnel[1]->basic_first_aid_knowledge);
+    }
+
+    public function test_later_apic_changes_do_not_rewrite_filed_personnel_or_verdicts(): void
+    {
+        $activity = $this->activity(2, ['personnel' => $this->personnelWithApic()]);
+        $submission = $this->submit($activity);
+        $snapshot = $submission->snapshot;
+        $verdicts = $submission->requirements()->get()->toArray();
+        $oldPersonnel = $activity->latestVersion->personnel->toArray();
+        $version = $activity->latestVersion;
+        $data = $version->toArray() + $activity->only(['institution_id', 'academic_period_id', 'calendar_id']);
+        $data['personnel'] = $this->personnelWithApic(['basic_first_aid_knowledge' => false]);
+        $revised = app(SaveActivity::class)->execute($this->hei, $data, $activity);
+        $this->assertNotEmpty(app(ActivityCompliance::class)->issues($revised->latestVersion));
+        $this->assertSame($snapshot, $submission->fresh()->snapshot);
+        $this->assertSame($verdicts, $submission->requirements()->get()->toArray());
+        $this->assertSame($oldPersonnel, $version->fresh()->personnel->toArray());
+    }
+
+    public function test_activity_form_persists_apic_knowledge_without_training_reference(): void
+    {
+        $activity = $this->activity(2, ['personnel' => $this->personnelWithApic()]);
+        $data = $activity->latestVersion->toArray() + $activity->only(['institution_id', 'academic_period_id', 'calendar_id']);
+        $data['title'] = 'Form-prepared APIC activity';
+        $data['personnel'] = $this->personnelWithApic();
+        $this->actingAs($this->hei);
+        Filament::setCurrentPanel(Filament::getPanel('hei'));
+        Livewire::test(ListActivity::class)->callAction('create', data: $data)->assertHasNoActionErrors();
+        $saved = Activity::where('title', $data['title'])->firstOrFail();
+        $this->assertTrue($saved->latestVersion->personnel[1]->basic_first_aid_knowledge);
+        $this->assertSame([], app(ActivityCompliance::class)->issues($saved->latestVersion));
     }
 
     public function test_venue_and_medical_risk_are_distinct_from_accommodation_and_vulnerability(): void

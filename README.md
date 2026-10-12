@@ -320,6 +320,12 @@ Back up the QA database/private storage first. The campaign seeder requires the 
 
 ## Known limits
 
+### Personnel readiness (FIX-03)
+
+For Category 1/2 treatment, including escalated Category 3, complete each PIC/APIC's employment, accompaniment and relevant qualifications. APICs use **APIC basic first-aid knowledge**; a separate APIC training-proof upload is not required. PIC training evidence and PIC-only ratios remain unchanged. Incomplete drafts can be saved, but the shared readiness check explains missing APIC particulars and blocks a new CMO filing. Ordinary Category 3 remains supervisor-only capable; optional PIC/APIC qualification scope is awaiting CHED confirmation.
+
+Existing installations require the additive `2026_10_12_005824_add_basic_first_aid_knowledge_to_activity_personnel` migration before using the new field. It adds a nullable column with no historical backfill and refuses destructive rollback. Back up the database/private files, inspect `php artisan migrate --pretend --no-interaction`, then apply through the approved deployment process. This task applies migrations only to disposable QA/test databases, not the normal development database.
+
 ### Classification revision workflow (Gap #2 Slice 3)
 
 In **HEI → Activities → Revise**, select an eligible classification rule set and enter the planning, supervision, baseline and change context. Saving creates a **recommendation**, not an authorized classification. Open the activity's **Classification history and requirements**, inspect the differences and evidence requirements, then use **Confirm saved classification** with an authorized submitter account and a reason. Confirmation creates another immutable activity version. A later edit requires another confirmation before filing under the selected rules.
