@@ -897,7 +897,7 @@ class Cmo24AlignmentTest extends TestCase
             'summary' => 'Authoritative off-campus investigation', 'opened_at' => '2026-10-07', 'source_document_id' => $this->document('official_order')->id]);
         $issues = app(ActivityReadiness::class)->issues($second);
         $this->assertContains('Activity-specific CEB clearance required for the current revision.', $issues);
-        app(RecordCaseEvent::class)->execute($officer, $case, 'fact_finding', 'Evidence gathered', $this->document('supporting', false)->id);
+        app(RecordCaseEvent::class)->execute($officer, $case, 'fact_finding', 'Evidence gathered', $this->document('case_evidence', false)->id);
         $this->assertSame('investigating', $case->fresh()->status);
         $this->assertDatabaseHas('case_events', ['case_record_id' => $case->id, 'type' => 'fact_finding']);
     }

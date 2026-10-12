@@ -351,3 +351,9 @@ Security/staging follow-up on **8 October 2026**: a scoped npm override pins con
 ## Repository hygiene
 
 Commit source, migrations, tests, documentation, and lockfiles. Exclude .env, keys, invitation links, credentials, SQLite databases, uploaded evidence, exports, logs, backups, portable tools, and generated assets. Only sanitized environment examples belong in Git.
+
+### Restricted case history (FIX-05)
+
+CHED case officers can open **Restricted cases → Case records → View → Record case event** to record jurisdiction referral, fact-finding/investigation, CHED Committee recommendation, signed CEB decision and external written HEI dispatch/receipt (CMO No. 24 §34, PDF p.16). The timeline distinguishes unknown historical stages; a complaint never automatically suspends an activity. External orders remain separate from application acknowledgment/authorization.
+
+For an existing installation, back up database/private files first, inspect the additive migration dry-run, then apply `2026_10_12_023309_add_procedure_to_case_events` and run `php artisan db:seed --class=CaseEvidenceTypeSeeder --no-interaction` through the approved deployment process. This adds nullable procedural metadata/replay keys and one restricted evidence type; it does not backfill old events or activate a policy. This task applied it only to disposable QA databases. See the FIX-05 walkthrough in [UAT guide](docs/UAT-guide.md).

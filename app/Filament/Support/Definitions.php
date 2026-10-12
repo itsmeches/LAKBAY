@@ -582,6 +582,13 @@ class Definitions
             $fields[] = Fields::make('metadata.coverage_from', 'optional_date');
             $fields[] = Fields::make('metadata.coverage_until', 'optional_date');
         }
+        if ($name === 'CaseRecord') {
+            foreach ($fields as $field) {
+                if ($field->getName() === 'status') {
+                    $field->options(['received' => 'Received', 'investigating' => 'Authoritative investigation on file']);
+                }
+            }
+        }
         if ($name === 'IncidentReport') {
             $fields[] = Fields::relation('supplements_report_id', IncidentReport::class, 'type', false);
             $fields[] = Repeater::make('persons')->schema([TextInput::make('name')->required(), TextInput::make('role')->required(), TextInput::make('remarks')])->defaultItems(0);

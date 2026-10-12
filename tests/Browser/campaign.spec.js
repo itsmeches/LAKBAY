@@ -454,6 +454,28 @@ test('classification: HEI saves a recommendation and confirms the saved revision
     await expect(page.getByRole('dialog')).toContainText('confirmed');
 });
 
+test('restricted case: detail action records evidence and administrator cannot view history', async ({ page }) => {
+    await login(page, 'case');
+    const listing = await page.goto('/ched/case-records');
+    expect(listing.status()).toBe(200);
+    await page.getByRole('link', { name: 'View', exact: true }).first().click();
+    const caseUrl = page.url();
+    await expect(page.getByText('Restricted procedural history', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Record case event', exact: true }).click();
+    await page.getByRole('combobox', { name: /^Procedural stage/ }).selectOption('fact_finding');
+    await page.getByRole('textbox', { name: /^Notes/ }).fill('Fictional FIX-05 browser fact-finding evidence');
+    await page.getByRole('combobox', { name: 'Restricted supporting evidence', exact: true }).click();
+    await page.getByRole('option', { name: /qa-official_order\.pdf/ }).click();
+    await page.getByRole('button', { name: /^(Submit|Confirm)$/ }).click();
+    await expect(page.getByRole('heading', { name: 'Record case event', exact: true })).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByText('Fictional FIX-05 browser fact-finding evidence', { exact: false })).toBeVisible();
+    await expect(page.getByText(/Not recorded:.*CHED Committee recommendation/)).toBeVisible();
+    await page.context().clearCookies();
+    await login(page, 'admin');
+    expect((await page.request.get(caseUrl)).status()).toBe(403);
+});
+
 test('CHED review inbox exposes filed schedule and operational attention filter', async ({ page }) => {
     await login(page, 'reviewer');
     await page.goto('/ched/submissions');

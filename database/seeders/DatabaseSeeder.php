@@ -87,5 +87,6 @@ class DatabaseSeeder extends Seeder
             }
         }
         $this->call(Cmo24PolicySeeder::class);
+        $this->call(CaseEvidenceTypeSeeder::class);
     }
 }

@@ -1024,3 +1024,16 @@ Additional run log:
 Use fictional records and local mail logging/capture only. In CHED → Submission inbox, enable **Open review / outstanding corrections** and sort **First filed activity (Asia/Manila)** ascending. Open a pending package, request corrections, and confirm its attention text becomes **Corrections outstanding**. Check a before-start and reached-start package; the latter is an operational cue, not a conduct approval. Revise an HEI plan without submitting: the original receipt's schedule and snapshot must remain unchanged. A superseded/closed package must disappear from the attention filter.
 
 In HEI → Prepare changes (Annex I), save a draft: no reviewer email. Send immediate notice or file the signed report: one minimal CHED notice should be queued. Process the local worker and inspect captured mail. Only active, email-verified regional users with records.view and submissions.review receive it; record-only staff, HEIs, unverified/inactive users and other regions do not. Repeat the same job: no second completed delivery. Revoke reviewer access before processing and verify no delivery. Signed follow-ups are separate intakes; late notices remain accepted and unresolved formal RCD timing remains displayed.
+
+## FIX-05 manual check — restricted complaint history
+
+Use an active, verified CHED case officer with regional `cases.sensitive` access. Open **Restricted cases → View → Record case event**. A general administrator or HEI account must not see this history. Upload signed complaint/order PDFs using the restricted case-evidence/official-order types and wait for a genuine successful scan; quarantined evidence must remain unavailable.
+
+1. Create a received complaint with a signed restricted complaint PDF. Confirm no investigation or restriction is created.
+2. Record a jurisdiction referral with actual date/time, reference, destination, HEI or activity-location basis and restricted proof. HEI basis must match the institution region; location basis requires its location.
+3. Record fact-finding and investigation findings, then a **CHED Committee recommendation** with evidence/reference. A recommendation without preceding evidence must fail.
+4. Record a CEB decision with authority `Commission en Banc (CEB)`, reference and signed restricted official-order PDF. Missing stages must fail unless explicitly recording an historical external decision with an explanation; the timeline must show unknown stages.
+5. Record written HEI dispatch linked to that decision with recipient, channel, reference and proof. Record HEI receipt linked to that dispatch, with recipient/reference/proof. Wrong-case links or dates preceding their linked evidence must fail.
+6. Reopen the record: actual dates, recording actor, evidence, external references and missing-history flags must remain. A later referral must not erase an existing authoritative investigation state. No event may overwrite earlier history.
+
+This tests recording, not actual external service of notice or authenticity of a legal order. Files remain private. Run the dedicated `CaseEvidenceTypeSeeder` only after backup and additive migration; do not reset or reseed the normal database.

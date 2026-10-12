@@ -4,6 +4,7 @@ namespace App\Actions\Operations;
 
 use App\Models\Activity;
 use App\Models\ActivityVersion;
+use App\Models\CaseEvent;
 use App\Models\CaseRecord;
 use App\Models\ClearanceRequest;
 use App\Models\Document;
@@ -81,12 +82,13 @@ class RecordOperationalRecord
         if ($type === 'case') {
             $doc = Document::findOrFail($data['source_document_id']);
             $code = $data['type'] === 'complaint' ? 'complaint' : 'official_order';
-            abort_unless($doc->institution_id === $id && $doc->scan_status === 'clean' && $doc->is_signed && $doc->documentType->code === $code && app(Access::class)->document($actor, $doc), 422, 'Record clean signed complaint or authoritative investigation evidence.');
+            abort_unless($doc->institution_id === $id && $doc->scan_status === 'clean' && $doc->is_signed && $doc->mime === 'application/pdf' && $doc->confidentiality === 'restricted' && $doc->documentType->code === $code && app(Access::class)->document($actor, $doc), 422, 'Record clean signed restricted complaint or authoritative investigation evidence.');
             abort_if($data['type'] === 'complaint' && $data['status'] === 'investigating', 422, 'A complaint does not establish an authoritative ongoing investigation.');
+            abort_if($data['status'] === 'referred', 422, 'Create the received record, then record the referral with its jurisdiction and evidence.');
         }
         if ($type === 'restriction') {
             $doc = Document::findOrFail($data['document_id']);
-            abort_unless($doc->institution_id === $id && $doc->scan_status === 'clean' && $doc->is_signed && $doc->documentType->code === 'official_order', 422);
+            abort_unless($doc->institution_id === $id && $doc->scan_status === 'clean' && $doc->is_signed && $doc->mime === 'application/pdf' && $doc->confidentiality === 'restricted' && $doc->documentType->code === 'official_order' && app(Access::class)->document($actor, $doc), 422);
         }
 
         return DB::transaction(function () use ($actor, $class, $actorField, $rules, $data, $type) {
@@ -105,6 +107,11 @@ class RecordOperationalRecord
                 $values['annex_m'] = app(MonitoringBuilder::class)->snapshot($actor, $data);
             }
             $r = $class::create($values + [$actorField => $actor->id]);
+            if ($type === 'case') {
+                CaseEvent::create(['case_record_id' => $r->id, 'type' => 'received', 'occurred_at' => $r->opened_at,
+                    'notes' => 'Source evidence recorded at intake. Earlier external stages are not inferred.', 'document_id' => $data['source_document_id'], 'created_by' => $actor->id,
+                    'procedure' => ['source' => 'CMO No.24 §34, PDF p.16', 'evidence' => Document::findOrFail($data['source_document_id'])->only(['id', 'public_id', 'sha256', 'document_type_id'])]]);
+            }
             if ($type === 'monitoring') {
                 Validator::make($data, ['items' => 'required|array|size:14', 'items.*.criterion_code' => 'required|distinct', 'items.*.compliance' => 'required|in:yes,no', 'items.*.verification' => 'required|string'])->validate();
                 foreach ($data['items'] as $item) {

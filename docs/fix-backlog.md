@@ -166,17 +166,39 @@ PostgreSQL/runtime multi-worker concurrency and production recovery remain block
 
 ## FIX-05 — Record complaint/investigation/decision notice history
 
-**Priority/type:** Major — partial procedural history.
+**Status:** Software registry delivered 12 October 2026; external jurisdiction transfer/legal performance remains partial. No later backlog item implemented.
 
-**Traceability:** SEC34-03–06.
+**Source/traceability:** CMO No. 24 §34.A–E, PDF p.16; §35, PDF p.17. SEC34-03–06; SEC35-03 remains PARTIAL.
 
-**Finding:** Events can be recorded without complete procedural history; activity-location referral and written notice to the HEI are not explicitly tracked.
+**Change:** Restricted immutable events now record source receipt, HEI/activity-location referral, fact-finding, investigation findings, CHED Committee recommendation, authoritative CEB decision, external written HEI dispatch and receipt. New recommendations/decisions validate evidenced preceding stages; explicitly explained historical external records retain missing-history snapshots rather than fabricating steps. Dispatch/receipt links must refer to earlier evidenced events in the same case. Actual event dates, recording actor, source fingerprints and references are preserved. Duplicate UI replay keys are rejected transactionally.
 
-**Proposed task:** Record referral jurisdiction, fact-finding, committee recommendation, external decision authority, signed order and HEI dispatch/receipt. Flag incomplete history; allow documented historical external decisions without inventing events.
+Complaint intake requires clean signed restricted PDF evidence. Consequential investigation/decision/closure stages require signed official-order PDFs. A complaint does not become an authoritative investigation and no event automatically creates a restriction. Separately recorded restrictions require authorized clean signed restricted orders. Existing unknown history is shown, not rewritten. The detail page now exposes Record case event; the creation form excludes terminal/referral statuses that cannot be established at intake.
 
-**Acceptance:** A complaint cannot create suspension. A consequential decision identifies its authoritative evidence and missing prerequisites/history. Restricted permissions apply to each step and attachment.
+**Data change:** Additive, idempotent migration adds nullable `procedure` JSON and unique nullable `event_key` to `case_events`, with no UPDATE/backfill and a refused destructive rollback. Idempotent `CaseEvidenceTypeSeeder` adds restricted case evidence; existing document types/confidentiality are not rewritten. Apply only after database/private-file backup through the normal deployment process. The normal database was not migrated/seeded during this task.
 
-**Evidence:** app/Actions/Operations/RecordCaseEvent.php; app/Actions/Operations/RecordOperationalRecord.php.
+**Evidence:** app/Actions/Operations/RecordCaseEvent.php; RecordOperationalRecord.php; app/Services/CaseProcedure.php; CHED CaseRecordResource and ViewCaseRecord; tests/Feature/CaseProcedureTest.php; tests/Browser/campaign.spec.js. Manual reproduction: docs/UAT-guide.md FIX-05.
+
+### FIX-05 executed verification
+
+Commands use portable PHP with `-c storage/app/verification-triage/current.ini` and installed Node. Ignored logs, JUnit, migration SQL, screenshots/traces and preservation evidence are under `storage/app/fix05/`.
+
+- Full PHPUnit: `{"tool":"phpunit","result":"passed","tests":497,"passed":497,"assertions":2385,"duration_ms":364963}`.
+- Pint: `{"tool":"pint","result":"passed"}`. PHPStan: `{"tool":"phpstan","result":"passed","errors":0}`.
+- Syntax: `PHP lint: 388 files; 0 errors`; browser JS syntax and diff whitespace exit 0.
+- Asset build: exit 0, `built in 2.83s`; existing optional-fontaine warning remains.
+- Additive migration dry-run: nullable procedure/event_key plus unique index only for FIX-05. QA application succeeds; repeat reports `Nothing to migrate`. Repeated migration/seeder and legacy preservation also pass in PHPUnit.
+- Focused browser: `1 passed (50.0s)` after correcting two new-test issues: required-field accessible names include an asterisk; switching roles requires clearing the previous cookie session. Neither required changing login/MFA limits. The event had already saved successfully before the second failure. Initial failure artifacts are retained separately.
+- Full browser: `38 passed (6.4m)`, exit 0. Annex B–M, genuine scanner/quarantine recovery, role access and the new restricted-case detail/save check pass. The temporary server was stopped.
+
+Preservation (`preservation.json`): submissions 6→6; requirement items 69→69; acknowledgments 2→2; reviews 5→5; cases 1→1; case events 0→2 (focused and full browser events); restrictions 0→0; audit rows 205→237; policy versions 3→3. Original submission, verdict, case and audit rows have matching hashes, with no changes/deletions. All 36 registered private files match original bytes. The existing Annex F browser test intentionally edits unsigned draft #2; its filed preparation stays unchanged. Original source/normal database group hashes are unchanged. Source/normal databases had zero case events, so legacy-row preservation is additionally established by the explicit PHPUnit legacy fixture, not a claimed production-event comparison. The normal schema still lacks the new columns: one additive migration is pending, zero old events need backfill.
+
+Scratch restore: `{"integrity":"ok","tables_compared":66,"count_mismatches":[]}`. This is local SQLite recovery evidence only, not PostgreSQL or production recovery approval.
+
+Fifteen new PHPUnit regressions cover the full procedural chain, historical unknown stages, absent prerequisites and rollback, HEI/location referrals, replay prevention, confidentiality/quarantine/ownership, real Livewire action visibility/save, restricted role/jurisdiction access, unchanged legacy events, receipt ordering/links, actual historical dates, CEB authority/signed evidence/reopening, repeated migration/seed, foreign-case dispatch and invalid HEI jurisdiction. The existing CMO evidence fixture uses the new restricted evidence type; no production record is changed to make tests pass.
+
+Browser verification uses copied SQLite/private files with local mail capture; unit fixtures simulate document rows, while the existing browser scanner tests run the genuine local scanner. Some lifecycle branches reuse already-filed fixtures and do not establish a fresh lifecycle from zero. No policy activation, actual external dispatch, public disclosure, throttle change or production deployment is included.
+
+PostgreSQL/concurrency and production recovery remain unverified: neither Docker nor psql is available on PATH. CHED must confirm receiving-office access/transfer for activity-location jurisdiction. The software cannot establish legal authenticity or actual service of notice. Independently recorded signed restrictions are not retroactively linked to cases or certified as procedurally complete. These limits retain PARTIAL verdicts for SEC34-03/04 and SEC35-03.
 
 ## FIX-06 — Complete exceptional-clearance routing
 
@@ -322,8 +344,8 @@ The table assigns every PARTIAL, MISSING, CONTRADICTS and NEEDS CHED DECISION en
 | SEC33-08 | PARTIAL | FIX-07 |
 | SEC34-03 | PARTIAL | FIX-05 |
 | SEC34-04 | PARTIAL | FIX-05 |
-| SEC34-05 | PARTIAL | FIX-05 |
-| SEC34-06 | MISSING | FIX-05 |
+| SEC34-05 | IMPLEMENTED | FIX-05 |
+| SEC34-06 | IMPLEMENTED | FIX-05 |
 | SEC35-03 | PARTIAL | FIX-05 |
 | SEC38-01 | PARTIAL | FIX-07 |
 | SEC40-03 | NEEDS CHED DECISION | DEC-01 |

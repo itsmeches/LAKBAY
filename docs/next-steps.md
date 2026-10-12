@@ -9,7 +9,7 @@ Slice 3 is committed as `3cd71b5` on `fix/gap2-classification-slice3`. Its verif
 | Gap #2 closure | Obtain CHED confirmation on classification defaults, materiality and unresolved change-report timing. All three software slices are complete. |
 | FIX-03: Personnel | Category 1/2 PIC/APIC readiness checks delivered 12 October; confirm optional ordinary Category 3 qualification scope and production verification. The ordinary Category 3 PIC blocker remains fixed. |
 | FIX-04: Review and alerts | Filed-schedule attention cues and authorized, deduplicated change-intake notices delivered 12 October; production queue/mail and PostgreSQL concurrency still require verification. |
-| FIX-05: Complaints | Complete referral, investigation, CHED Committee recommendation, signed decision and HEI dispatch/receipt history. |
+| FIX-05: Complaints | Procedural registry delivered 12 October: referral, findings, CHED Committee, signed CEB decision and external HEI dispatch/receipt. Cross-region transfer/access and external legal performance remain unverified. |
 | FIX-06: Exceptional clearance | Complete routing/evidence tracking and coordinate the 90-day application with later pre-activity requirements. |
 | FIX-07: Regional reports | Freeze monitoring findings/recommendations and associate the correct report with dispatch and OSDS receipt evidence. |
 | FIX-08: File integrity | Verify private-file hashes before serving previews/downloads; block altered or missing files. |
@@ -20,4 +20,4 @@ Slice 3 is committed as `3cd71b5` on `fix/gap2-classification-slice3`. Its verif
 | Production verification | Run isolated PostgreSQL migrations, concurrency and backup restoration tests, followed by staging/pilot checks. |
 | CHED decisions and activation | Resolve publication/effectivity, SAA coverage, Category 3 timelines, RCD anchor and supplementary CLOCA handling before official activation. |
 
-Recommended next coding task after the scoped FIX-04 delivery: **FIX-05**, after separate authorization. Preserve historical versions, receipts, verdicts and signed evidence throughout; do not guess publication details or resolve legal ambiguities silently.
+Recommended next coding task after the scoped FIX-05 delivery: **FIX-06**, after separate authorization. Preserve historical versions, receipts, verdicts and signed evidence throughout; do not guess publication details or resolve legal ambiguities silently.

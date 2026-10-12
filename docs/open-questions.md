@@ -29,3 +29,7 @@ Confirm semester/term coverage, whether one affidavit covers all applicable acti
 The app supports reuse of clean institutional evidence and coverage metadata, but does not automatically certify term coverage or notarization. Do not introduce guessed validity dates or require a new SAA for each escalated activity.
 
 Ordinary Category 3 SAA applicability is resolved for this implementation: Section 14 row 10 marks only Categories 1–2. Do not carry ordinary Category 3 SAA timing as an unresolved requirement. Other operational questions remain in [CHED-clarifications.md](CHED-clarifications.md); they are outside this task.
+
+## FIX-05 — activity-location case jurisdiction
+
+CMO No. 24 §34.B, PDF p.16 permits referral to HEI jurisdiction or activity-location jurisdiction. The app records the destination, basis and evidence, but retains HEI-region access. Confirm transfer/shared access, receiving-office acceptance and responsibility for subsequent steps before authorizing another region to access a restricted case. No immediate-referral numeric deadline is invented. External legal authenticity and actual dispatch/receipt remain matters for CHED verification.

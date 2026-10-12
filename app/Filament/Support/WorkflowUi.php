@@ -41,8 +41,10 @@ use App\Models\IncidentReport;
 use App\Models\IncidentReportDraft;
 use App\Models\MonitoringRecord;
 use App\Models\PolicyVersion;
+use App\Models\Region;
 use App\Models\Submission;
 use App\Services\Access;
+use App\Services\CaseProcedure;
 use App\Services\Compliance\ActivityReadiness;
 use App\Services\Compliance\ClassificationPresentation;
 use App\Services\Compliance\PolicyRules;
@@ -61,6 +63,7 @@ use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class WorkflowUi
@@ -253,7 +256,24 @@ class WorkflowUi
         }
         if ($model === CaseRecord::class) {
             return [
-                Action::make('case_status')->label('Record case event')->visible(fn () => auth()->user()->can('cases.sensitive'))->schema(fn ($record) => [Select::make('status')->options(['received' => 'Received', 'referred' => 'Referred', 'investigating' => 'Investigating', 'fact_finding' => 'Fact-finding evidence', 'committee_recommendation' => 'Committee recommendation', 'osds_referral' => 'OSDS referral', 'decided' => 'Decided', 'closed' => 'Closed'])->required(), Textarea::make('notes')->required(), Select::make('document_id')->options(fn () => Fields::related(Document::class, 'original_name', $record->institution_id))])->action(fn ($record, array $data) => app(RecordCaseEvent::class)->execute(auth()->user(), $record, $data['status'], $data['notes'], empty($data['document_id']) ? null : (int) $data['document_id'])),
+                Action::make('case_status')->label('Record case event')->visible(fn () => auth()->user()->can('cases.sensitive'))->schema(fn ($record) => [
+                    Select::make('status')->label('Procedural stage')->options(CaseProcedure::stages())->required()->live(),
+                    DateTimePicker::make('details.occurred_at')->label('Event date/time (Asia/Manila)')->default(now()->setTimezone(config('lakbay.timezone'))->format('Y-m-d H:i:s'))->required(),
+                    Hidden::make('details.event_key')->default(fn () => (string) Str::uuid()),
+                    Textarea::make('notes')->required()->maxLength(4000),
+                    Select::make('document_id')->label('Restricted supporting evidence')->options(fn () => collect(Fields::related(Document::class, 'original_name', $record->institution_id))->only(Document::where('institution_id', $record->institution_id)->where('confidentiality', 'restricted')->pluck('id')->all())->all())->searchable(),
+                    TextInput::make('details.reference')->label('Official / dispatch / receipt reference')->maxLength(255),
+                    TextInput::make('details.authority')->label('Actual issuing authority')->maxLength(255)->helperText('A CEB decision must identify Commission en Banc (CEB). Enter the actual authority for investigation or closure.'),
+                    Select::make('details.destination_region_id')->label('Referral destination region')->options(Region::pluck('name', 'id'))->visible(fn (Get $get) => $get('status') === 'referred'),
+                    Select::make('details.jurisdiction_basis')->label('Referral jurisdiction basis')->options(['hei' => 'HEI jurisdiction', 'activity_location' => 'Activity-location jurisdiction'])->visible(fn (Get $get) => $get('status') === 'referred'),
+                    TextInput::make('details.activity_location')->label('Referral activity location')->maxLength(1000)->visible(fn (Get $get) => $get('status') === 'referred'),
+                    Select::make('details.decision_event_id')->label('CEB decision being dispatched')->options($record->events()->where('type', 'decided')->get()->mapWithKeys(fn ($event) => [$event->id => '#'.$event->id.' '.$event->notes])->all())->visible(fn (Get $get) => $get('status') === 'hei_dispatched'),
+                    Select::make('details.dispatch_event_id')->label('Dispatch being acknowledged')->options($record->events()->where('type', 'hei_dispatched')->get()->mapWithKeys(fn ($event) => [$event->id => '#'.$event->id.' '.$event->notes])->all())->visible(fn (Get $get) => $get('status') === 'hei_received'),
+                    TextInput::make('details.recipient')->label('HEI recipient / receiving office')->maxLength(255)->visible(fn (Get $get) => in_array($get('status'), ['hei_dispatched', 'hei_received'], true)),
+                    Select::make('details.channel')->label('Dispatch channel')->options(['email' => 'Email', 'post' => 'Post', 'courier' => 'Courier', 'personal' => 'Personal delivery', 'other' => 'Other'])->visible(fn (Get $get) => $get('status') === 'hei_dispatched'),
+                    Checkbox::make('details.historical_external')->label('Historical external stage; earlier registry history is unavailable')->live(),
+                    Textarea::make('details.history_explanation')->label('Historical evidence and missing-stage explanation')->maxLength(4000)->visible(fn (Get $get) => (bool) $get('details.historical_external')),
+                ])->action(fn ($record, array $data) => app(RecordCaseEvent::class)->execute(auth()->user(), $record, $data['status'], $data['notes'], empty($data['document_id']) ? null : (int) $data['document_id'], $data['details'] ?? [])),
             ];
         }
         if ($model === Submission::class) {
