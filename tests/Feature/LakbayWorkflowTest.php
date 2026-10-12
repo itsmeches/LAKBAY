@@ -27,6 +27,7 @@ use App\Filament\Hei\Resources\Pages\ListAcademicPeriod;
 use App\Filament\Hei\Resources\Pages\ListActivity;
 use App\Filament\Hei\Resources\Pages\ListCalendar;
 use App\Filament\Hei\Resources\Pages\ListDocument;
+use App\Filament\Hei\Resources\Pages\ListDocumentRequest;
 use App\Filament\Hei\Resources\Pages\ViewActivity;
 use App\Filament\Support\Fields;
 use App\Jobs\GenerateExport;
@@ -62,6 +63,7 @@ use Filament\Actions\Testing\TestAction;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Auth\Pages\Login;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Select;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -161,13 +163,13 @@ class LakbayWorkflowTest extends TestCase
         return $u;
     }
 
-    private function document(string $code): Document
+    private function document(string $code, array $overrides = []): Document
     {
         $t = DocumentType::where('code', $code)->firstOrFail();
         $path = 'test/'.Str::uuid().'.pdf';
         Storage::disk('private')->put($path, '%PDF-test');
 
-        return Document::create(['institution_id' => $this->institution->id, 'document_type_id' => $t->id, 'public_id' => (string) Str::uuid(), 'path' => $path, 'original_name' => $code.'.pdf', 'mime' => 'application/pdf', 'size' => 9, 'sha256' => hash('sha256', '%PDF-test'), 'confidentiality' => $t->confidentiality, 'scan_status' => 'clean', 'is_signed' => true, 'uploaded_by' => $this->hei->id]);
+        return Document::create(array_replace(['institution_id' => $this->institution->id, 'document_type_id' => $t->id, 'public_id' => (string) Str::uuid(), 'path' => $path, 'original_name' => $code.'.pdf', 'mime' => 'application/pdf', 'size' => 9, 'sha256' => hash('sha256', '%PDF-test'), 'confidentiality' => $t->confidentiality, 'scan_status' => 'clean', 'is_signed' => true, 'uploaded_by' => $this->hei->id], $overrides));
     }
 
     private function imageDocument(string $code = 'certification'): Document
@@ -1304,11 +1306,66 @@ class LakbayWorkflowTest extends TestCase
         try {
             app(RequestEvidence::class)->respond($this->hei, $request, $this->document('cloca')->id);
             $this->fail('Wrong evidence type accepted.');
-        } catch (HttpException $exception) {
-            $this->assertSame(422, $exception->getStatusCode());
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('document_id', $exception->errors());
+            $this->assertStringContainsString('requested document type', $exception->errors()['document_id'][0]);
         }
         $this->assertSame('requested', $request->fresh()->status);
         $this->assertNull($request->fresh()->response_document_id);
+    }
+
+    public function test_evidence_response_dialog_lists_only_eligible_documents_and_submits(): void
+    {
+        $submission = $this->submit();
+        $request = app(RequestEvidence::class)->execute($this->staff('ched_reviewer'), $submission, ['document_type_id' => DocumentType::where('code', 'racp')->value('id'), 'reason' => 'Provide signed RACP', 'due_at' => '2026-10-20 09:00']);
+        $request->update(['signature_mode' => 'signed']);
+        $eligible = $this->document('racp');
+        $this->document('cloca');
+        $pending = $this->document('racp');
+        $pending->update(['scan_status' => 'pending']);
+        $this->document('racp', ['is_signed' => false]);
+        $this->document('racp', ['mime' => 'image/png']);
+        $otherInstitution = Institution::create(['region_id' => $this->institution->region_id, 'ched_code' => 'OTHER-EVIDENCE', 'name' => 'Other HEI', 'institution_type' => 'private']);
+        $this->document('racp', ['institution_id' => $otherInstitution->id]);
+        $this->assertSame([$eligible->id => $eligible->original_name], app(RequestEvidence::class)->responseOptions($this->hei, $request));
+        Filament::setCurrentPanel(Filament::getPanel('hei'));
+        $this->actingAs($this->hei);
+        $page = Livewire::test(ListDocumentRequest::class)
+            ->mountAction(TestAction::make('respond')->table($request))
+            ->assertActionMounted()
+            ->assertFormFieldExists('document_id', fn (Select $component): bool => $component->getOptions() === [$eligible->id => $eligible->original_name]);
+        $page->fillForm(['document_id' => $eligible->id])->callMountedAction()->assertHasNoActionErrors();
+        $this->assertSame('submitted', $request->fresh()->status);
+        $this->assertSame($eligible->id, $request->fresh()->response_document_id);
+    }
+
+    public function test_evidence_response_scan_state_change_shows_inline_error_and_preserves_request(): void
+    {
+        $submission = $this->submit();
+        $request = app(RequestEvidence::class)->execute($this->staff('ched_reviewer'), $submission, ['document_type_id' => DocumentType::where('code', 'racp')->value('id'), 'reason' => 'Provide RACP', 'due_at' => '2026-10-20 09:00']);
+        $document = $this->document('racp');
+        Filament::setCurrentPanel(Filament::getPanel('hei'));
+        $this->actingAs($this->hei);
+        $page = Livewire::test(ListDocumentRequest::class)
+            ->mountAction(TestAction::make('respond')->table($request))->fillForm(['document_id' => $document->id]);
+        $document->update(['scan_status' => 'pending']);
+        $page->callMountedAction()->assertHasActionErrors(['document_id']);
+        $this->assertSame('requested', $request->fresh()->status);
+        $this->assertNull($request->fresh()->response_document_id);
+    }
+
+    public function test_evidence_response_cannot_overwrite_a_previous_response(): void
+    {
+        $request = app(RequestEvidence::class)->execute($this->staff('ched_reviewer'), $this->submit(), ['document_type_id' => DocumentType::where('code', 'racp')->value('id'), 'reason' => 'Provide RACP', 'due_at' => '2026-10-20 09:00']);
+        $first = $this->document('racp');
+        app(RequestEvidence::class)->respond($this->hei, $request, $first->id);
+        try {
+            app(RequestEvidence::class)->respond($this->hei, $request, $this->document('racp')->id);
+            $this->fail('A previous response was replaced.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('document_id', $exception->errors());
+        }
+        $this->assertSame($first->id, $request->fresh()->response_document_id);
     }
 
     public function test_monitoring_with_missing_criteria_rolls_back(): void

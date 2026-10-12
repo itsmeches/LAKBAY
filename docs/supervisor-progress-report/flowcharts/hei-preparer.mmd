@@ -1,0 +1,21 @@
+flowchart TD
+    S0["1. Start<br/>Sign in to the HEI workspace"]
+    S1["2. Prepare<br/>Create the calendar and activity"]
+    S2["3. Prepare<br/>Fill in the applicable annex forms"]
+    S3["4. Check<br/>Preview and print the forms"]
+    S4["5. Outside the app<br/>Arrange authorization and signing"]
+    S5["6. Check<br/>Upload evidence; wait for a clean scan"]
+    S6["7. Outcome<br/>Hand the package to the HEI submitter"]
+    S0 --> S1
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> S5
+    S5 --> S6
+    classDef action fill:#edf4f8,stroke:#d2e0e8,color:#19354b;
+    classDef outcome fill:#ebf5ef,stroke:#c7ded1,color:#19354b;
+    class S0,S1,S2,S3,S4,S5 action;
+    class S6 outcome;
+
+%% Missing information stays in draft until corrected.
+%% This role prepares and uploads; it cannot submit official reports or packages.

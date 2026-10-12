@@ -10,6 +10,7 @@ use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\ViewEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -134,13 +135,13 @@ abstract class ScopedResource extends Resource
     {
         $fields = Definitions::detailFields(static::$model);
         $entries = array_map(
-            fn ($field) => static::formatRecordField(TextEntry::make($field)->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : $state), $field),
+            fn ($field) => static::recordEntry($field),
             array_values(array_diff($fields, ['snapshot'])),
         );
         $sections = [Section::make('Record overview')->schema($entries)->columns(2)->columnSpanFull()];
         if (in_array('snapshot', $fields, true)) {
             $sections[] = Section::make('Historical submission snapshot')->description('The record preserved at submission.')->schema([
-                TextEntry::make('snapshot')->formatStateUsing(fn ($state) => json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE))->columnSpanFull(),
+                static::recordEntry('snapshot')->columnSpanFull(),
             ])->collapsible()->collapsed()->columnSpanFull();
         }
 
@@ -222,5 +223,22 @@ abstract class ScopedResource extends Resource
         }
 
         return str_starts_with($field, 'latestVersion.') ? $component->label($label) : $component;
+    }
+
+    private static function recordEntry(string $field): TextEntry|ViewEntry
+    {
+        $model = new (static::getModel());
+        foreach (explode('.', $field) as $segment) {
+            if (method_exists($model, $segment)) {
+                $model = $model->{$segment}()->getRelated();
+            } else {
+                $cast = explode(':', $model->getCasts()[$segment] ?? '')[0];
+                if (in_array($cast, ['array', 'json', 'object', 'collection'], true)) {
+                    return ViewEntry::make($field)->view('filament.infolists.structured-record')->columnSpanFull();
+                }
+            }
+        }
+
+        return static::formatRecordField(TextEntry::make($field), $field);
     }
 }

@@ -1,0 +1,28 @@
+sequenceDiagram
+ actor HEI as Authorized HEI submitter
+ participant UI as Filament/Livewire
+ participant Act as SubmitActivity
+ participant Rule as Access / PolicyRules / Resolver
+ participant DB as Database
+ HEI->>UI: File applicable stage and evidence
+ UI->>Act: execute(selected versions, policy, evidence)
+ Act->>DB: Begin transaction / lock records
+ Act->>Rule: Verify membership, state, eligible policy and completeness
+ alt Invalid or stale
+ Rule-->>Act: Validation / denial
+ Act->>DB: Rollback
+ Act-->>UI: Error; no filed revision
+ else Valid
+ Act->>DB: Freeze receipt, versions, evidence and annex payloads
+ Act->>DB: Audit / commit
+ Act-->>UI: Receipt and follow-up notice
+ end
+ actor Reviewer as CHED reviewer
+ Reviewer->>UI: Review exact receipt
+ UI->>DB: Record findings / review transition via Action
+ alt Corrections
+ UI-->>HEI: Deficiency advice
+ HEI->>Act: Resubmit new revision
+ else Complete
+ UI-->>Reviewer: Complete; signatory step remains separate
+ end

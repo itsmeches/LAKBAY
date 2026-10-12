@@ -1,0 +1,16 @@
+flowchart TD
+ Plan[HEI plan / classify / consult] --> Prepare[Prepare forms and applicable evidence]
+ Prepare --> External[External HEI authorization / signing / notarization]
+ External --> Upload[Private upload / successful genuine scan]
+ Upload --> Check{Authorized and complete applicable checklist?}
+ Check -->|No| Prepare
+ Check -->|Yes| Submit[Submit frozen receipt/version]
+ Submit --> Review[CHED completeness review]
+ Review --> Decision{Deficiencies?}
+ Decision -->|Yes| Correct[HEI revises / resubmits new receipt]
+ Correct --> Review
+ Decision -->|No| Ack[Record signed completeness acknowledgment]
+ Ack -. separate checks; not authorization .-> Conduct[HEI conducts under external authority / restrictions / clearance]
+ Conduct --> Reports[ROC / incident / change reports]
+ Reports --> Monitor[Monitoring / assistance / corrective follow-up]
+ Monitor --> Regional[Regional snapshots / recorded OSDS dispatch]

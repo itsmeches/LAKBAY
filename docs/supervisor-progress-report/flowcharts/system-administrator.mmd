@@ -1,0 +1,20 @@
+flowchart TD
+    S0["1. Start<br/>Sign in to the CHED workspace"]
+    S1["2. Maintain<br/>Manage regional institutions and campuses"]
+    S2["3. Invite<br/>Invite personnel with supported roles"]
+    S3["4. Onboarding<br/>Personnel accept and enroll in MFA"]
+    S4["5. Check<br/>Inspect policy and publication controls"]
+    S5["6. Outcome<br/>Maintain accounts and reference records"]
+    S0 --> S1
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> S5
+    classDef action fill:#edf4f8,stroke:#d2e0e8,color:#19354b;
+    classDef outcome fill:#ebf5ef,stroke:#c7ded1,color:#19354b;
+    class S0,S1,S2,S3,S4 action;
+    class S5 outcome;
+
+%% CMO 24 remains a candidate; activation requires verified publication and authority.
+%% Administration does not grant access to confidential cases.
+%% No policy activation is part of this journey.

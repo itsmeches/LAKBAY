@@ -1,0 +1,22 @@
+flowchart TD
+    S0["1. Start<br/>Open an authorized regional case"]
+    S1["2. Check<br/>Inspect the signed complaint or source"]
+    S2["3. Record<br/>Document referral and investigation findings"]
+    S3["4. Record<br/>Document the CHED Committee recommendation"]
+    S4["5. Record<br/>Record the signed CEB decision"]
+    S5["6. Follow up<br/>Record written dispatch and HEI receipt"]
+    S6["7. Outcome<br/>Preserve the confidential case history"]
+    S0 --> S1
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> S5
+    S5 --> S6
+    classDef action fill:#edf4f8,stroke:#d2e0e8,color:#19354b;
+    classDef outcome fill:#ebf5ef,stroke:#c7ded1,color:#19354b;
+    class S0,S1,S2,S3,S4,S5 action;
+    class S6 outcome;
+
+%% External proceedings are recorded here; the app does not perform them.
+%% New decisions require prior evidence; historical gaps must be explained.
+%% A complaint alone does not suspend an HEI. Clearance routing remains unfinished.

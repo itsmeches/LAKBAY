@@ -1,0 +1,10 @@
+flowchart TD
+ Login[Sign in and complete MFA] --> Guard{Active verified role and affiliation?}
+ Guard -->|No| Deny[Denied]
+ Guard -->|Yes| N0[Select regional cutoff and reporting period]
+ N0 --> N1[Prepare regional snapshot]
+ N1 --> N2[Request CSV / PDF export]
+ N2 --> N3[Worker rechecks access and generates]
+ N3 --> N4[Retrieve unexpired private output / record external dispatch]
+ N0 -. invalid input / evidence / state .-> Error[Validation error; no unauthorized transition]
+ Error --> N0

@@ -1,0 +1,11 @@
+flowchart TD
+ Login[Sign in and complete MFA] --> Guard{Active verified role and affiliation?}
+ Guard -->|No| Deny[Denied]
+ Guard -->|Yes| N0[Open verified authorized HEI]
+ N0 --> N1[Inspect / confirm classification where selected]
+ N1 --> N2[Prepare applicable signed evidence]
+ N2 --> N3[Submit frozen receipt]
+ N3 --> N4[Corrections: revise and resubmit]
+ N4 --> N5[Read issued letter; file ROC / incidents / changes]
+ N0 -. invalid input / evidence / state .-> Error[Validation error; no unauthorized transition]
+ Error --> N0

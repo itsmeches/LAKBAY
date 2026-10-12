@@ -1,0 +1,22 @@
+flowchart TD
+    S0["1. Start<br/>Sign in to the authorized HEI workspace"]
+    S1["2. Check<br/>Review the plan and classification"]
+    S2["3. Check<br/>Confirm authority and required evidence"]
+    S3["4. Submit<br/>File the completed package"]
+    S4["5. Follow up<br/>View review messages and acknowledgment"]
+    S5["6. Report<br/>File completion, incident or change reports"]
+    S6["7. Outcome<br/>Keep the activity record up to date"]
+    S0 --> S1
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> S5
+    S5 --> S6
+    classDef action fill:#edf4f8,stroke:#d2e0e8,color:#19354b;
+    classDef outcome fill:#ebf5ef,stroke:#c7ded1,color:#19354b;
+    class S0,S1,S2,S3,S4,S5 action;
+    class S6 outcome;
+
+%% If CHED requests corrections: revise and submit a new package.
+%% Only successfully scanned evidence is retrievable; filed versions stay unchanged.
+%% Acknowledgment confirms receipt/completeness, not authorization to conduct.

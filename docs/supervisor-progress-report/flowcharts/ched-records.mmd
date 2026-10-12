@@ -1,0 +1,19 @@
+flowchart TD
+    S0["1. Start<br/>Sign in to the CHED workspace"]
+    S1["2. Find<br/>Open the regional submission records"]
+    S2["3. Check<br/>Inspect the filed package and documents"]
+    S3["4. Organize<br/>Upload supporting correspondence"]
+    S4["5. Support<br/>Locate issued acknowledgment letters"]
+    S5["6. Outcome<br/>Provide records support for reviewers"]
+    S0 --> S1
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> S5
+    classDef action fill:#edf4f8,stroke:#d2e0e8,color:#19354b;
+    classDef outcome fill:#ebf5ef,stroke:#c7ded1,color:#19354b;
+    class S0,S1,S2,S3,S4 action;
+    class S5 outcome;
+
+%% This role does not review completeness or issue acknowledgments.
+%% Restricted records and unscanned files remain protected.

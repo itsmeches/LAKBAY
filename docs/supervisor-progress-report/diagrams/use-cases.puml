@@ -1,0 +1,40 @@
+@startuml
+left to right direction
+actor "Public visitor" as Public
+actor "HEI preparer" as Prep
+actor "HEI submitter" as Submit
+actor "CHED records" as Records
+actor "CHED reviewer" as Review
+actor "CHED signatory" as Sign
+actor "CHED monitor" as Monitor
+actor "CHED case officer" as Cases
+actor "CHED analyst" as Analyst
+actor "System administrator" as Admin
+rectangle LAKBAY {
+ usecase "Read guidance" as Guidance
+ usecase "Prepare forms / upload evidence" as Prepare
+ usecase "File / correct / report" as File
+ usecase "Locate regional records" as Locate
+ usecase "Review completeness" as Complete
+ usecase "Record signed acknowledgment" as Ack
+ usecase "Monitor / assist / follow up" as Follow
+ usecase "Record restricted external procedure" as Case
+ usecase "Regional snapshots / exports" as Export
+ usecase "Invitations / references / policy controls" as Manage
+}
+Public --> Guidance
+Prep --> Prepare
+Submit --> Prepare
+Submit --> File
+Records --> Locate
+Review --> Complete
+Sign --> Ack
+Monitor --> Follow
+Cases --> Case
+Analyst --> Export
+Admin --> Manage
+note bottom of LAKBAY
+Protected use cases require MFA and record-level authorization.
+No national OSDS panel or automated external CEB decision.
+end note
+@enduml

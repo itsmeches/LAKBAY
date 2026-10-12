@@ -14,9 +14,20 @@ use App\Services\Compliance\PolicyRules;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 class RequestEvidence
 {
+    /** @return array<int, string> */
+    public function responseOptions(User $actor, DocumentRequest $request): array
+    {
+        return Document::query()->where('institution_id', $request->institution_id)
+            ->where('document_type_id', $request->document_type_id)->where('scan_status', 'clean')
+            ->when($request->signature_mode === 'signed', fn ($query) => $query->where('is_signed', true)->where('mime', 'application/pdf'))
+            ->get()->filter(fn (Document $document) => app(Access::class)->document($actor, $document))
+            ->pluck('original_name', 'id')->all();
+    }
+
     public function execute(User $actor, Submission $submission, array $data): DocumentRequest
     {
         app(Access::class)->authorize($actor, $submission->institution_id, 'submissions.review', false, true);
@@ -40,10 +51,20 @@ class RequestEvidence
 
         return DB::transaction(function () use ($actor, $request, $documentId) {
             $r = DocumentRequest::whereKey($request->id)->lockForUpdate()->firstOrFail();
-            abort_unless($r->status === 'requested', 422);
+            if ($r->status !== 'requested') {
+                throw ValidationException::withMessages(['document_id' => 'This request has already been answered. Refresh the evidence requests page.']);
+            }
             $d = Document::findOrFail($documentId);
-            abort_unless($d->institution_id === $r->institution_id && $d->document_type_id === $r->document_type_id && $d->scan_status === 'clean', 422);
-            abort_unless(app(Access::class)->document($actor, $d) && ($r->signature_mode !== 'signed' || ($d->is_signed && $d->mime === 'application/pdf')), 422);
+            abort_unless($d->institution_id === $r->institution_id && app(Access::class)->document($actor, $d), 403);
+            if ($d->document_type_id !== $r->document_type_id) {
+                throw ValidationException::withMessages(['document_id' => 'Choose a document with the requested document type: '.$r->documentType->name.'.']);
+            }
+            if ($d->scan_status !== 'clean') {
+                throw ValidationException::withMessages(['document_id' => 'Wait for this document to pass malware scanning before responding.']);
+            }
+            if ($r->signature_mode === 'signed' && (! $d->is_signed || $d->mime !== 'application/pdf')) {
+                throw ValidationException::withMessages(['document_id' => 'This request requires a signed PDF of the requested document type.']);
+            }
             $r->update(['status' => 'submitted', 'response_document_id' => $d->id, 'responded_at' => now()]);
             Audit::record($actor, 'evidence.response_received', $r);
 

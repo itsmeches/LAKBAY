@@ -1,0 +1,12 @@
+flowchart LR
+ Prep[HEI preparer] -->|Prepared records| Submit[HEI submitter]
+ Submit -->|Frozen filing| Records[CHED records / intake support]
+ Submit --> Reviewer[CHED reviewer]
+ Reviewer -->|Correction advice| Submit
+ Reviewer -->|Complete receipt| Sign[CHED signatory]
+ Sign -->|Signed acknowledgment| Submit
+ Monitor[CHED monitor] <-->|Follow-up evidence| Submit
+ Analyst[CHED analyst] -->|Regional snapshots / exports| Output[External regional reporting]
+ Case[CHED case officer] -->|Restricted external evidence| Cases[Case / clearance records]
+ Admin[System administrator] -->|Invitations / reference and policy controls| Accounts[Verified personnel]
+ Note[External OSDS / CEB decisions recorded; no national panel] --- Cases

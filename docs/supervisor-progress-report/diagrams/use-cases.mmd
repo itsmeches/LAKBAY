@@ -1,0 +1,13 @@
+flowchart LR
+ HEI[HEI preparer / submitter] --> A([Prepare plans / Annexes])
+ HEI --> B([File and correct records - submitter only])
+ HEI --> C([File reports / respond to follow-up])
+ R[CHED reviewer] --> D([Review completeness / deficiencies])
+ S[CHED signatory] --> E([Prepare and record acknowledgment])
+ M[CHED monitor] --> F([Monitor / assist / follow up])
+ K[CHED case officer] --> G([Record restricted external procedure])
+ N[CHED analyst] --> H([Regional snapshot / export])
+ I[Administrator] --> J([Invite / maintain references / policy controls])
+ Public[Public visitor] --> P([Read guidance])
+ Guard([MFA and record authorization]) -. applies .-> A
+ Guard -. applies .-> G

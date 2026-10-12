@@ -1,0 +1,9 @@
+flowchart TD
+ Login[Sign in and complete MFA] --> Guard{Active verified role and affiliation?}
+ Guard -->|No| Deny[Denied]
+ Guard -->|Yes| N0[Maintain regional institutions / campuses]
+ N0 --> N1[Invite supported verified personnel]
+ N1 --> N2[Inspect policy / publication controls]
+ N2 --> N3[Await written CHED authority; do not activate candidate in demo]
+ N0 -. invalid input / evidence / state .-> Error[Validation error; no unauthorized transition]
+ Error --> N0

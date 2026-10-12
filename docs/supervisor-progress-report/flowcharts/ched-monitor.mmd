@@ -1,0 +1,21 @@
+flowchart TD
+    S0["1. Start<br/>Select a regional HEI and monitoring visit"]
+    S1["2. Monitor<br/>Complete the 14 Annex M checks"]
+    S2["3. Record<br/>Enter findings and recommendations"]
+    S3["4. Prepare<br/>Fill in signatories and HEI conforme details"]
+    S4["5. Check<br/>Save, preview and print the monitoring form"]
+    S5["6. Follow up<br/>Record assistance and corrective actions"]
+    S6["7. Outcome<br/>Maintain the monitoring history"]
+    S0 --> S1
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> S5
+    S5 --> S6
+    classDef action fill:#edf4f8,stroke:#d2e0e8,color:#19354b;
+    classDef outcome fill:#ebf5ef,stroke:#c7ded1,color:#19354b;
+    class S0,S1,S2,S3,S4,S5 action;
+    class S6 outcome;
+
+%% Follow-up is recorded when needed; it is not required for every visit.
+%% Monitoring findings do not automatically impose sanctions.

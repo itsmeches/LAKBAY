@@ -1,0 +1,10 @@
+flowchart TD
+ Login[Sign in and complete MFA] --> Guard{Active verified role and affiliation?}
+ Guard -->|No| Deny[Denied]
+ Guard -->|Yes| N0[Select regional institution / monitoring visit]
+ N0 --> N1[Complete 14 checks and verification]
+ N1 --> N2[Record findings / signatories / HEI conforme particulars]
+ N2 --> N3[Print saved Annex M]
+ N3 --> N4[Assistance / corrective follow-up]
+ N0 -. invalid input / evidence / state .-> Error[Validation error; no unauthorized transition]
+ Error --> N0

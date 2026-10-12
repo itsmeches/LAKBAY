@@ -190,6 +190,39 @@ class CertificationTest extends TestCase
         $this->assertSame(1, CertificationDraft::count());
     }
 
+    public function test_record_details_are_labeled_and_not_flattened_json_in_both_panels(): void
+    {
+        Livewire::test(ViewCertificationDraft::class, ['record' => $this->draft->id])
+            ->assertSee('Official')->assertSee('Fictional Authorized Official')
+            ->assertSee('Mission')
+            ->assertSee('Aligned with the HEI mission-vision')
+            ->assertDontSee('"mission":')->assertDontSee('"version":');
+
+        $reviewer = User::factory()->create(['region_id' => $this->institution->region_id, 'app_authentication_secret' => 'TESTSECRET']);
+        $reviewer->assignRole('ched_reviewer');
+        $this->actingAs($reviewer);
+        Filament::setCurrentPanel(Filament::getPanel('ched'));
+        Livewire::test(ChedViewCertificationDraft::class, ['record' => $this->draft->id])
+            ->assertSee('Official')->assertSee('Aligned with the HEI mission-vision')
+            ->assertDontSee('"mission":');
+    }
+
+    public function test_structured_record_values_escape_markup_and_preserve_false_and_blank_values(): void
+    {
+        $html = view('filament.infolists.structured-values', ['values' => [
+            'supporting' => ['proof' => false, 'other' => null], 'remarks' => '<script>alert(1)</script>',
+        ]])->render();
+
+        $this->assertStringContainsString('Supporting', $html);
+        $this->assertStringContainsString('No', $html);
+        $this->assertStringContainsString('Not provided', $html);
+        $this->assertStringContainsString('&lt;script&gt;', $html);
+        $this->assertStringNotContainsString('<script>', $html);
+        $this->assertStringContainsString('<details>', $html);
+        $this->assertStringContainsString('<summary', $html);
+        $this->assertStringContainsString('>No</span>', $html);
+    }
+
     public function test_forms_create_and_revise_certification_inputs(): void
     {
         Livewire::test(ListCertificationDraft::class)->callAction('create', data: array_replace($this->data(), ['title' => 'Second certification']))

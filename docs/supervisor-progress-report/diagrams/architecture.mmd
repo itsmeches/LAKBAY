@@ -1,0 +1,15 @@
+flowchart TB
+ Visitor[Public visitor] --> Public[Blade public site]
+ HEI[HEI preparer / submitter] --> HP[Filament HEI panel]
+ CHED[CHED regional roles] --> CP[Filament CHED panel]
+ Public --> App[One Laravel application]
+ HP --> App
+ CP --> App
+ App --> DB[(Relational records / snapshots)]
+ App --> Files[(Private files / quarantine)]
+ App -. queued .-> Worker[Laravel worker]
+ Worker --> Scanner[Configured local malware scanner]
+ Worker --> Files
+ Worker -. configured .-> Mail[Mail transport / QA capture]
+ External[HEI signing / OSDS / CEB external work] -. recorded evidence .-> App
+ Note[Local verified: SQLite. PostgreSQL deployment: prepared, unverified.] --- DB

@@ -1,0 +1,14 @@
+flowchart TD
+ I[Invitation: expiring hashed token] --> Accept[Set password / one-time acceptance]
+ Accept --> Login[Panel login]
+ Login --> Identity{Active / verified email / panel role and affiliation?}
+ Identity -->|No| Deny[Access denied]
+ Identity -->|Yes| MFA{Required authenticator MFA satisfied?}
+ MFA -->|No| Setup[Enroll / complete challenge]
+ Setup --> MFA
+ MFA -->|Yes| Record{Permission + ownership/jurisdiction + confidentiality?}
+ Record -->|No| Deny
+ Record -->|Yes| State{Valid record state / required evidence?}
+ State -->|No| Error[Validation / stale-state error]
+ State -->|Yes| Action[Shared Action or protected controller]
+ Action --> Audit[Record transition/access audit]

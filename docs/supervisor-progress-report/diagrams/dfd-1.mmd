@@ -1,0 +1,22 @@
+flowchart TB
+ H[HEI] --> P1((1 Prepare / classify))
+ P1 --> D1[(Institutions / policy / versions)]
+ H --> P2((2 Upload / scan))
+ P2 --> D2[(Private documents / scan state)]
+ P1 --> P3((3 Submit / snapshot))
+ D2 --> P3
+ D1 --> P3
+ P3 --> D3[(Immutable submissions / evidence)]
+ D3 --> P4((4 Review / corrections / acknowledgment))
+ C[CHED roles] --> P4
+ P4 --> D3
+ P4 -->|Correction request| H
+ H --> P5((5 Reports / follow-up))
+ C --> P5
+ P5 --> D4[(Reports / monitoring / restricted history)]
+ D3 --> P6((6 Regional snapshot / export))
+ D4 --> P6
+ P6 -->|Authorized output| C
+ P3 --> A[(Audit / delivery records)]
+ P4 --> A
+ P5 --> A

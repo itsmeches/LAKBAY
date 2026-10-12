@@ -1,0 +1,19 @@
+flowchart TD
+    S0["1. Start<br/>Sign in to the CHED workspace"]
+    S1["2. Find<br/>Open the regional submission inbox"]
+    S2["3. Check<br/>Read the exact submitted version"]
+    S3["4. Review<br/>Check requirements and evidence"]
+    S4["5. Review outcome<br/>Record completeness when satisfied"]
+    S5["6. Outcome<br/>Hand the complete package to the signatory"]
+    S0 --> S1
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> S5
+    classDef action fill:#edf4f8,stroke:#d2e0e8,color:#19354b;
+    classDef outcome fill:#ebf5ef,stroke:#c7ded1,color:#19354b;
+    class S0,S1,S2,S3,S4 action;
+    class S5 outcome;
+
+%% If incomplete: request specific corrections and review the new submission.
+%% Completeness review is not activity approval; the signatory issues the letter.

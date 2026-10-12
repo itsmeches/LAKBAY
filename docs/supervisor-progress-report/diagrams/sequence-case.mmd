@@ -1,0 +1,17 @@
+sequenceDiagram
+ actor Officer as CHED case officer
+ participant UI as Restricted case form
+ participant Act as RecordCaseEvent
+ participant DB as Case / evidence / events
+ Officer->>UI: Stage, actual time, evidence and particulars
+ UI->>Act: execute with replay key
+ Act->>DB: Regional/confidential access, lock case, inspect prior evidence
+ alt New decision missing required stages
+ Act-->>UI: Validation failure; no event
+ else Explicit historical external record with explanation
+ Act->>DB: Preserve missing-stage snapshot and actual date
+ else Complete valid stage
+ Act->>DB: Append immutable event and audit
+ end
+ Act-->>UI: Recorded timeline; no automatic restriction
+ Note over Officer,DB: External Committee/CEB work and HEI service are recorded, not performed

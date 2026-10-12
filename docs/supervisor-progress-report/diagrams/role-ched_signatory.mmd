@@ -1,0 +1,10 @@
+flowchart TD
+ Login[Sign in and complete MFA] --> Guard{Active verified role and affiliation?}
+ Guard -->|No| Deny[Denied]
+ Guard -->|Yes| N0[Open complete calendar submission]
+ N0 --> N1[Prepare Annex K / inspect originals]
+ N1 --> N2[Preview; sign externally]
+ N2 --> N3[Upload clean signed letter]
+ N3 --> N4[Record acknowledgment of exact receipt]
+ N0 -. invalid input / evidence / state .-> Error[Validation error; no unauthorized transition]
+ Error --> N0

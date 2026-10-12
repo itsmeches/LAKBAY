@@ -1,0 +1,24 @@
+sequenceDiagram
+ actor User as Authorized uploader
+ participant App as UploadDocument
+ participant Store as Private storage
+ participant DB as Document records
+ participant Worker as ScanDocument job
+ participant Scanner as Configured scanner
+ User->>App: Valid file and metadata
+ App->>Store: Store private bytes
+ App->>DB: Pending scan / hash / confidentiality
+ App-->>Worker: Queue scan
+ Worker->>Scanner: Scan resolved local path
+ alt Scanner fails or infection found
+ Worker->>DB: Preserve quarantine / infected state
+ User->>App: Attempt retrieval
+ App-->>User: Denied until clean
+ else Genuine successful scan and hash match
+ Worker->>DB: Clean
+ User->>App: Preview / download
+ App->>DB: Recheck access and scan state; audit
+ App->>Store: Retrieve authorized bytes
+ App-->>User: Protected response
+ end
+ Note over App,Store: Fresh generic retrieval hash check remains FIX-08

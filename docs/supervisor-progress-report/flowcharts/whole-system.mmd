@@ -1,0 +1,26 @@
+flowchart TD
+    S0["1. HEI preparer<br/>Plan and classify the activity"]
+    S1["2. HEI preparer<br/>Prepare forms and required evidence"]
+    S2["3. Authorized HEI official<br/>Authorize and sign outside the app"]
+    S3["4. HEI submitter<br/>Upload evidence; wait for a clean scan"]
+    S4["5. HEI submitter<br/>Submit the completed package"]
+    S5["6. CHED reviewer<br/>Review the submitted requirements"]
+    S6["7. CHED signatory<br/>Record the signed acknowledgment"]
+    S7["8. HEI / HEI submitter<br/>Conduct the activity and file reports"]
+    S8["9. CHED monitor / analyst<br/>Monitor, follow up and report regionally"]
+    S0 --> S1
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> S5
+    S5 --> S6
+    S6 --> S7
+    S7 --> S8
+    classDef action fill:#edf4f8,stroke:#d2e0e8,color:#19354b;
+    classDef outcome fill:#ebf5ef,stroke:#c7ded1,color:#19354b;
+    class S0,S1,S2,S3,S4,S5,S6,S7 action;
+    class S8 outcome;
+
+%% If incomplete: CHED requests corrections; HEI files a new submission.
+%% Acknowledgment is not permission to conduct. HEI authority, restrictions
+%% and any required clearance independently govern conduct; this is the typical journey.

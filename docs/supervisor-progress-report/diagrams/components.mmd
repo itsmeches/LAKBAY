@@ -1,0 +1,13 @@
+flowchart LR
+ UI[Filament / Livewire / Blade] --> Entry[Resources / Pages / web controllers]
+ Entry --> Actions[Shared domain Actions]
+ Actions --> Access[Permissions / membership / jurisdiction / confidentiality]
+ Actions --> Rules[Versioned requirements / classification / deadlines]
+ Actions --> Models[Eloquent / transaction guards]
+ Models --> DB[(Relational data)]
+ Actions --> Builders[Annex snapshot builders]
+ Builders --> Print[Protected HTML / DOMPDF]
+ Actions -. after commit where configured .-> Jobs[Scan / notify / export jobs]
+ Jobs --> DB
+ Jobs --> Private[(Private storage)]
+ Models --> Audit[Audit events]

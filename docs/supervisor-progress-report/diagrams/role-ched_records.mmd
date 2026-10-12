@@ -1,0 +1,9 @@
+flowchart TD
+ Login[Sign in and complete MFA] --> Guard{Active verified role and affiliation?}
+ Guard -->|No| Deny[Denied]
+ Guard -->|Yes| N0[Open regional records]
+ N0 --> N1[Inspect exact intake and institutional evidence]
+ N1 --> N2[Upload correspondence / locate issued letter]
+ N2 --> N3[Hand review responsibility to reviewer]
+ N0 -. invalid input / evidence / state .-> Error[Validation error; no unauthorized transition]
+ Error --> N0

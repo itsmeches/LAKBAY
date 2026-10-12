@@ -1,0 +1,10 @@
+flowchart TD
+ Login[Sign in and complete MFA] --> Guard{Active verified role and affiliation?}
+ Guard -->|No| Deny[Denied]
+ Guard -->|Yes| N0[Open own HEI workspace]
+ N0 --> N1[Prepare calendar / activity and forms]
+ N1 --> N2[Print unsigned preparation / sign externally]
+ N2 --> N3[Upload evidence; wait for clean scan]
+ N3 --> N4[Hand off to authorized submitter]
+ N0 -. invalid input / evidence / state .-> Error[Validation error; no unauthorized transition]
+ Error --> N0

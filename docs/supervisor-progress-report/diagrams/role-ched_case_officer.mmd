@@ -1,0 +1,10 @@
+flowchart TD
+ Login[Sign in and complete MFA] --> Guard{Active verified role and affiliation?}
+ Guard -->|No| Deny[Denied]
+ Guard -->|Yes| N0[Open regional restricted record]
+ N0 --> N1[Inspect signed source and unknown history]
+ N1 --> N2[Record referral / findings / CHED Committee]
+ N2 --> N3[Record signed CEB decision with prerequisites or explicit historical gaps]
+ N3 --> N4[Record written HEI dispatch / linked receipt]
+ N0 -. invalid input / evidence / state .-> Error[Validation error; no unauthorized transition]
+ Error --> N0

@@ -1,0 +1,20 @@
+flowchart TD
+    S0["1. Start<br/>Open regional reporting"]
+    S1["2. Choose<br/>Select the period and reporting cutoff"]
+    S2["3. Prepare<br/>Save the regional report snapshot"]
+    S3["4. Request<br/>Request a CSV or PDF export"]
+    S4["5. Check<br/>Wait for the export to be ready"]
+    S5["6. Outcome<br/>Download the authorized report"]
+    S0 --> S1
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> S5
+    classDef action fill:#edf4f8,stroke:#d2e0e8,color:#19354b;
+    classDef outcome fill:#ebf5ef,stroke:#c7ded1,color:#19354b;
+    class S0,S1,S2,S3,S4 action;
+    class S5 outcome;
+
+%% Failed exports can be retried; expired outputs need a new request.
+%% Student totals count participations, not distinct students.
+%% External dispatch/receipt can be recorded; full narrative coverage is pending.

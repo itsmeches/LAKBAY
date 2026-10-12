@@ -1,0 +1,19 @@
+flowchart TD
+    S0["1. Start<br/>Open a complete calendar submission"]
+    S1["2. Prepare<br/>Fill in Annex K letter details"]
+    S2["3. Check<br/>Inspect the evidence and preview the letter"]
+    S3["4. Outside the app<br/>Arrange official signing"]
+    S4["5. Check<br/>Upload the signed PDF; await a clean scan"]
+    S5["6. Outcome<br/>Record the acknowledgment for that submission"]
+    S0 --> S1
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> S5
+    classDef action fill:#edf4f8,stroke:#d2e0e8,color:#19354b;
+    classDef outcome fill:#ebf5ef,stroke:#c7ded1,color:#19354b;
+    class S0,S1,S2,S3,S4 action;
+    class S5 outcome;
+
+%% Incomplete evidence or an unscanned letter prevents issuance.
+%% The letter confirms receipt/completeness, not permission to conduct.

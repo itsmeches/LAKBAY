@@ -52,6 +52,7 @@
 *.backup
 /backups/
 /exports/
+/docs/supervisor-progress-report/exports/
 /uploads/
 /clamav/
 /lakbay-dev-tools/

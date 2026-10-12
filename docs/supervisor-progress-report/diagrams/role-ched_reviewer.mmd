@@ -1,0 +1,10 @@
+flowchart TD
+ Login[Sign in and complete MFA] --> Guard{Active verified role and affiliation?}
+ Guard -->|No| Deny[Denied]
+ Guard -->|Yes| N0[Open regional submission inbox]
+ N0 --> N1[Inspect filed start and exact revision]
+ N1 --> N2[Review completeness]
+ N2 --> N3[Deficiencies: request corrections; otherwise record complete]
+ N3 --> N4[Signatory records separate signed acknowledgment]
+ N0 -. invalid input / evidence / state .-> Error[Validation error; no unauthorized transition]
+ Error --> N0

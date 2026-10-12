@@ -1,0 +1,22 @@
+erDiagram
+ institutions ||--o{ completion_report_drafts : prepares
+ activities ||--o{ completion_reports : completed
+ completion_report_drafts o|--o| completion_reports : filed
+ activities ||--o{ incident_reports : incident
+ incident_reports ||--o{ incident_persons : report_people
+ incident_reports o|--o{ incident_reports : supplement
+ activities ||--o{ change_reports : deviations
+ change_report_drafts o|--o| change_reports : filed
+ institutions ||--o{ monitoring_records : monitored
+ monitoring_records ||--o{ monitoring_items : criteria
+ institutions ||--o{ corrective_actions : followup
+ institutions ||--o{ technical_assistance_logs : guidance
+ institutions ||--o{ case_records : restricted
+ case_records ||--o{ case_events : immutable_history
+ documents o|--o{ case_events : evidence
+ activity_versions ||--o{ clearance_requests : exact_plan
+ clearance_requests ||--o| reconsiderations : one_request
+ institutions ||--o{ institutional_restrictions : signed_orders
+ regions ||--o{ regional_reports : summaries
+ users ||--o{ exports : requests
+ users o|--o{ audit_events : actor

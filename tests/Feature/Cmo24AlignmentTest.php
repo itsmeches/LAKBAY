@@ -721,7 +721,7 @@ class Cmo24AlignmentTest extends TestCase
         $request = app(RequestEvidence::class)->execute($this->staff('ched_reviewer'), $submission, ['document_type_id' => DocumentType::where('code', 'racp')->value('id'), 'reason' => 'Verification']);
         $this->assertTrue($request->due_at->equalTo(now()));
         $this->assertSame('immediate_on_request', $request->deadline_parameters['type']);
-        $this->expectException(HttpException::class);
+        $this->expectException(ValidationException::class);
         app(RequestEvidence::class)->respond($this->hei, $request, $this->document('racp', false)->id);
     }
 
