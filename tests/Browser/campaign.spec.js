@@ -454,6 +454,16 @@ test('classification: HEI saves a recommendation and confirms the saved revision
     await expect(page.getByRole('dialog')).toContainText('confirmed');
 });
 
+test('CHED review inbox exposes filed schedule and operational attention filter', async ({ page }) => {
+    await login(page, 'reviewer');
+    await page.goto('/ched/submissions');
+    await expect(page.getByRole('columnheader', { name: /First filed activity/ })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Review attention', exact: true })).toBeVisible();
+    await expect(page.getByText('Operational cue; not a legal review deadline or permission to conduct.').first()).toBeVisible();
+    await page.getByRole('button', { name: 'Filter', exact: true }).click();
+    await expect(page.getByText('Open review / outstanding corrections', { exact: true })).toBeVisible();
+});
+
 test('personnel: APIC knowledge saves without training proof and missing knowledge appears in readiness', async ({ page }) => {
     await login(page);
     await page.goto(`/hei/activities/${manifest.records.activity}/revise`);

@@ -1018,3 +1018,9 @@ Additional run log:
 | --- | --- | --- | --- | --- | --- | --- |
 | ____ | ____ | ____ | ____ | ____ | ____ | ____ |
 | ____ | ____ | ____ | ____ | ____ | ____ | ____ |
+
+### FIX-04 manual retest
+
+Use fictional records and local mail logging/capture only. In CHED → Submission inbox, enable **Open review / outstanding corrections** and sort **First filed activity (Asia/Manila)** ascending. Open a pending package, request corrections, and confirm its attention text becomes **Corrections outstanding**. Check a before-start and reached-start package; the latter is an operational cue, not a conduct approval. Revise an HEI plan without submitting: the original receipt's schedule and snapshot must remain unchanged. A superseded/closed package must disappear from the attention filter.
+
+In HEI → Prepare changes (Annex I), save a draft: no reviewer email. Send immediate notice or file the signed report: one minimal CHED notice should be queued. Process the local worker and inspect captured mail. Only active, email-verified regional users with records.view and submissions.review receive it; record-only staff, HEIs, unverified/inactive users and other regions do not. Repeat the same job: no second completed delivery. Revoke reviewer access before processing and verify no delivery. Signed follow-ups are separate intakes; late notices remain accepted and unresolved formal RCD timing remains displayed.

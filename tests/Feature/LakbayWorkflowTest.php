@@ -200,6 +200,46 @@ class LakbayWorkflowTest extends TestCase
         return app(SubmitCalendar::class)->execute($this->hei, $this->calendar, $p->id, $e, $previous);
     }
 
+    public function test_institution_correction_notices_require_verified_email_and_record_access(): void
+    {
+        Notification::fake();
+        $unverified = User::factory()->unverified()->create();
+        $unverified->assignRole('hei_preparer');
+        $unverified->institutions()->attach($this->institution->id, ['position' => 'Preparer', 'verified_at' => now()]);
+        $noAccess = User::factory()->create();
+        $noAccess->institutions()->attach($this->institution->id, ['position' => 'Preparer', 'verified_at' => now()]);
+        $job = new NotifyInstitution($this->institution->id, 'correction-test', 'Correction requested', 'Sign in to read it.');
+        $job->handle();
+        $job->handle();
+        Notification::assertSentToTimes($this->hei, WorkflowNotice::class, 1);
+        Notification::assertNotSentTo($unverified, WorkflowNotice::class);
+        Notification::assertNotSentTo($noAccess, WorkflowNotice::class);
+    }
+
+    public function test_ched_review_queue_uses_filed_schedule_and_excludes_closed_and_other_region_records(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-12-09 09:00', 'Asia/Manila'));
+        $submission = $this->submit();
+        $snapshot = $submission->snapshot;
+        $reviewer = $this->staff('ched_reviewer');
+        app(ReviewSubmission::class)->execute($reviewer, $submission, 'corrections_requested', 'Provide corrected evidence.');
+        app(SaveActivity::class)->execute($this->hei, array_replace($this->data(), ['starts_at' => '2027-01-10 09:00', 'ends_at' => '2027-01-10 17:00']), $this->activity);
+        Filament::setCurrentPanel(Filament::getPanel('ched'));
+        $this->actingAs($reviewer);
+        Livewire::test(ListSubmission::class)
+            ->assertTableColumnFormattedStateSet('activity_versions_min_starts_at', '10 Dec 2026, 09:00', $submission)
+            ->assertSee('Corrections outstanding — before filed start')
+            ->filterTable('pre_conduct_attention')->assertCanSeeTableRecords([$submission]);
+        $this->travelTo(CarbonImmutable::parse('2026-12-10 09:00', 'Asia/Manila'));
+        Livewire::test(ListSubmission::class)->assertSee('Corrections outstanding — filed start reached');
+        $this->assertSame($snapshot, $submission->fresh()->snapshot);
+        $submission->update(['status' => 'superseded']);
+        Livewire::test(ListSubmission::class)->filterTable('pre_conduct_attention')->assertCanNotSeeTableRecords([$submission]);
+        $otherRegion = Region::create(['code' => 'QA-V', 'name' => 'Other region']);
+        $reviewer->forceFill(['region_id' => $otherRegion->id])->save();
+        Livewire::test(ListSubmission::class)->assertCanNotSeeTableRecords([$submission]);
+    }
+
     public function test_correction_and_acknowledgment_preserve_history(): void
     {
         $s = $this->submit();

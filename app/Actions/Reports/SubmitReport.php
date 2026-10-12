@@ -2,6 +2,7 @@
 
 namespace App\Actions\Reports;
 
+use App\Jobs\NotifyChedChangeReport;
 use App\Models\Activity;
 use App\Models\ActivityVersion;
 use App\Models\ChangeReport;
@@ -272,6 +273,9 @@ class SubmitReport
                 }
             }
             Audit::record($actor, 'report.'.$type.'.received', $report, ['is_late' => $report->is_late]);
+            if ($type === 'change') {
+                DB::afterCommit(fn () => NotifyChedChangeReport::dispatch($report->id));
+            }
 
             return $report;
         });

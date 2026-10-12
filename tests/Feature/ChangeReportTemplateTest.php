@@ -7,6 +7,7 @@ use App\Actions\Reports\SaveChangeReportDraft;
 use App\Actions\Reports\SubmitReport;
 use App\Filament\Hei\Resources\Pages\ListChangeReportDraft;
 use App\Filament\Hei\Resources\Pages\ViewChangeReportDraft;
+use App\Jobs\NotifyChedChangeReport;
 use App\Models\AcademicPeriod;
 use App\Models\Activity;
 use App\Models\ActivityVersion;
@@ -19,11 +20,16 @@ use App\Models\PolicyVersion;
 use App\Models\Region;
 use App\Models\Submission;
 use App\Models\User;
+use App\Notifications\WorkflowNotice;
 use App\Services\Reporting\ChangeReportBuilder;
 use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -110,6 +116,87 @@ class ChangeReportTemplateTest extends TestCase
     {
         return app(SubmitReport::class)->execute($this->hei, 'change', [
             'change_report_draft_id' => $this->draft->id, 'document_id' => $signed ? ($document ?? $this->document())->id : null]);
+    }
+
+    public function test_change_intake_queues_authorized_ched_notice_after_commit_only(): void
+    {
+        Queue::fake();
+        DB::beginTransaction();
+        $report = $this->file(signed: false);
+        Queue::assertNothingPushed();
+        DB::rollBack();
+        Queue::assertNothingPushed();
+        $this->assertDatabaseMissing('change_reports', ['id' => $report->id]);
+        $report = $this->file(signed: false);
+        Queue::assertPushed(NotifyChedChangeReport::class, fn ($job) => $job->reportId === $report->id);
+        $this->assertNull($report->due_at);
+    }
+
+    public function test_change_notices_recheck_jurisdiction_verification_permissions_and_deduplicate(): void
+    {
+        Notification::fake();
+        $report = $this->file(signed: false);
+        $reviewer = User::factory()->create(['region_id' => $this->institution->region_id]);
+        $reviewer->assignRole('ched_reviewer');
+        $excluded = [];
+        foreach (['inactive', 'unverified', 'other_region', 'records_only'] as $kind) {
+            $user = User::factory()->create(['region_id' => $kind === 'other_region' ? Region::create(['code' => 'QA-V', 'name' => 'Fictional region'])->id : $this->institution->region_id,
+                'is_active' => $kind !== 'inactive', 'email_verified_at' => $kind === 'unverified' ? null : now()]);
+            $user->assignRole($kind === 'records_only' ? 'ched_records' : 'ched_reviewer');
+            $excluded[] = $user;
+        }
+        $job = new NotifyChedChangeReport($report->id);
+        $job->handle();
+        $job->handle();
+        Notification::assertSentToTimes($reviewer, WorkflowNotice::class, 1);
+        foreach (array_merge($excluded, [$this->hei]) as $user) {
+            Notification::assertNotSentTo($user, WorkflowNotice::class);
+        }
+        $this->assertDatabaseCount('notification_deliveries', 1);
+        Notification::assertSentTo($reviewer, WorkflowNotice::class, fn ($notice) => $notice->panel === 'ched' && ! str_contains($notice->message, $report->reason));
+        $reviewer->removeRole('ched_reviewer');
+        Notification::fake();
+        $job->handle();
+        Notification::assertNothingSent();
+    }
+
+    public function test_change_notice_failed_transport_remains_retryable_without_false_delivery(): void
+    {
+        $report = $this->file(signed: false);
+        $reviewer = User::factory()->create(['region_id' => $this->institution->region_id]);
+        $reviewer->assignRole('ched_reviewer');
+        Notification::shouldReceive('send')->once()->andThrow(new \RuntimeException('Fictional transport failure'));
+        try {
+            (new NotifyChedChangeReport($report->id))->handle();
+            $this->fail('Transport failure should propagate for queue retry.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('Fictional transport failure', $exception->getMessage());
+        }
+        $this->assertDatabaseHas('notification_deliveries', ['user_id' => $reviewer->id, 'delivered_at' => null]);
+        Notification::fake();
+        (new NotifyChedChangeReport($report->id))->handle();
+        Notification::assertSentToTimes($reviewer, WorkflowNotice::class, 1);
+    }
+
+    public function test_actual_database_worker_delivers_once_and_revoked_access_receives_nothing(): void
+    {
+        config(['queue.default' => 'database', 'mail.default' => 'array']);
+        $reviewer = User::factory()->create(['region_id' => $this->institution->region_id]);
+        $reviewer->assignRole('ched_reviewer');
+        $revoked = User::factory()->create(['region_id' => $this->institution->region_id]);
+        $revoked->assignRole('ched_reviewer');
+        $report = $this->file(signed: false);
+        $revoked->removeRole('ched_reviewer');
+        NotifyChedChangeReport::dispatch($report->id);
+        $this->assertDatabaseCount('jobs', 2);
+        $this->artisan('queue:work', ['--once' => true, '--tries' => 5])->assertExitCode(0);
+        $this->artisan('queue:work', ['--once' => true, '--tries' => 5])->assertExitCode(0);
+        $this->assertDatabaseCount('jobs', 0);
+        $this->assertDatabaseCount('notification_deliveries', 1);
+        $this->assertDatabaseMissing('notification_deliveries', ['user_id' => $revoked->id]);
+        $messages = Mail::mailer('array')->getSymfonyTransport()->messages();
+        $this->assertCount(1, $messages);
+        $this->assertSame($reviewer->email, $messages->first()->getOriginalMessage()->getTo()[0]->getAddress());
     }
 
     public function test_annex_maps_comparison_source_date_and_signatories_without_creating_receipt(): void

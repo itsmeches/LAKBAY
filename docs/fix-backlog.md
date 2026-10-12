@@ -123,17 +123,46 @@ PostgreSQL runtime/concurrency and production recovery remain unverified: neithe
 
 ## FIX-04 — Track deficiencies before conduct and notify change intake
 
-**Priority/type:** Major — partial implementation.
+**Priority/type:** Major — software implementation delivered; production verification pending.
 
 **Traceability:** SEC16-01; SEC19-02; SEC21-01.
 
-**Finding:** Correction notices exist, but a pre-conduct review queue/escalation anchor is missing. Immediate change intake lacks a dedicated CHED notification job.
+**Historical finding:** Correction notices existed, but filed schedules and pre-conduct review attention were missing from the inbox. Immediate change intake lacked a dedicated CHED notification job.
 
 **Proposed task:** Expose next activity start in the review queue and overdue pre-conduct advice. Add idempotent, authorized CHED change-notice notifications. Do not invent a legal review interval.
 
 **Acceptance:** An impending activity with unreviewed deficiencies is visible; correction/change notices reach only authorized local-test recipients once. Late reporting remains accepted.
 
-**Evidence:** app/Actions/Submissions/ReviewSubmission.php; app/Notifications/WorkflowNotice.php.
+**Delivered 12 October 2026:** CHED inbox adds an earliest-filed-start column, operational before/reached-start cues and an open-review/corrections filter. It uses immutable linked versions, never current unsent plans. Each new immediate/signed/follow-up change intake dispatches `NotifyChedChangeReport` after commit. Active, email-verified regional reviewers require record and review permissions; queued execution rechecks access. Minimal emails omit narratives/attachments. A unique delivery ledger, row locks and queue overlap protection skip successful duplicates; failures remain retryable. The existing HEI notice job now also requires verified email, HEI panel, record access and active verified membership. Sources: final CMO No.24 §16, PDF p.12; §§19/21, PDF pp.12–13. No legal review interval, migration, notification backfill, policy activation, RCD anchor or login/MFA change.
+
+**Evidence:** app/Actions/Submissions/ReviewSubmission.php; app/Actions/Reports/SubmitReport.php; app/Filament/Ched/Resources/SubmissionResource.php; app/Jobs/NotifyChedChangeReport.php; app/Jobs/NotifyInstitution.php; tests/Feature/ChangeReportTemplateTest.php; tests/Feature/LakbayWorkflowTest.php; tests/Browser/campaign.spec.js. Manual reproduction is in docs/UAT-guide.md under FIX-04.
+
+**Limits:** Calendar attention uses the earliest included filed start; inspect individual activities for mixed dates. Actual timely advice remains a staff responsibility, not an automatic legal verdict. Mail can duplicate across a crash after transport acceptance but before delivery recording; external exactly-once is not claimed. PostgreSQL concurrency, production mail and production recovery require separate verification.
+
+### FIX-04 executed verification
+
+Final commands used the portable PHP executable with `-c storage/app/verification-triage/current.ini`, and the installed Node executable. Ignored evidence is under `storage/app/fix04/`.
+
+| Check | Real final output |
+| --- | --- |
+| `vendor/bin/phpunit --log-junit storage/app/fix04/phpunit.xml` | `{"tool":"phpunit","result":"passed","tests":482,"passed":482,"assertions":2330,"duration_ms":289626}` |
+| `node node_modules/@playwright/test/cli.js test` | `37 passed (7.1m)` |
+| `vendor/bin/pint --dirty --format agent` | `{"tool":"pint","result":"passed"}` |
+| `vendor/bin/phpstan analyse --no-progress --error-format=table` | `{"tool":"phpstan","result":"passed","errors":0}` |
+| PHP syntax loop over tracked/new PHP | `PHP lint: 384 files, 0 errors` |
+| `node --check tests/Browser/campaign.spec.js` | Exit 0, no output |
+| `node node_modules/vite/bin/vite.js build` | `built in 2.55s`, exit 0; existing optional-fontaine warning |
+| `git diff --check` | Exit 0; line-ending normalization warnings only |
+
+Six new PHPUnit regressions cover immutable filed dates and exact start boundary; review filtering/jurisdiction; verified HEI recipients; after-commit dispatch and rollback; CHED recipient isolation/completed-delivery deduplication; failed transport retries; and an actual database queue worker delivering to the array mail capture while denying access revoked before execution. The worker test processes two copies and captures one email. Browser adds one real inbox-column/filter check. Existing late-report, annex, quarantine and permission coverage remains green.
+
+Initial full PHPUnit passed 481/2,327 before the final HEI-recipient regression was added. That new fixture initially omitted its required membership position; the focused test failed with a NOT NULL error, was corrected and passed before the definitive 482/2,330 run. First browser run: 36 passed, one new test failed at the plural `Filters` selector. Its screenshot/accessibility trace showed the actual button is `Filter`; no app fix was needed. Corrected focused browser: `1 passed (26.7s)`. Final complete browser run on a fresh QA clone: 37/37. Original failed artifacts and both execution logs are retained; login throttles were not loosened.
+
+All browser runs used copied SQLite/private files, local mail logging and separate artifact roots; the normal database was not migrated, reseeded or tested. Previous additive migrations and the proposed classification rule seeder ran only on disposable copies. Already-filed fixture branches are reused by some lifecycle tests, so this campaign does not claim a fresh lifecycle from zero. Genuine scan/preview and scanner-failure quarantine cases passed separately from simulated unit fixtures. The temporary QA server was stopped after each run.
+
+Preservation comparison (`preservation.json`): submissions 6→6; requirement items 69→69; acknowledgments 2→2; reviews 5→5; classifications 19→23; personnel 19→25; unsigned certification drafts 2→2; audits 205→235; policy versions 3→3. Every original immutable row and audit row matched its source checksum with zero deletion; new classification/personnel/audit entries came from existing browser scenarios. One editable unsigned certification draft (#2) changed deliberately in the Annex F edit test; its filed preparation stayed unchanged. Source database checksums remained unchanged for every group. All 36 registered private-document files matched their source bytes, with zero missing/altered originals. Livewire automatically expired 26 stale temporary upload files in the disposable copy; these are not registered evidence and source files were untouched.
+
+PostgreSQL/runtime multi-worker concurrency and production recovery remain blocked by missing Docker/psql; no infrastructure was installed. Production mail/queue operations remain unverified. No publication date was invented and no candidate policy was activated. FIX-05 and later items remain separate.
 
 ## FIX-05 — Record complaint/investigation/decision notice history
 
@@ -281,10 +310,10 @@ The table assigns every PARTIAL, MISSING, CONTRADICTS and NEEDS CHED DECISION en
 | SEC13-07 | PARTIAL | FIX-02 |
 | SEC13-08 | PARTIAL | FIX-02 |
 | SEC13-10 | NEEDS CHED DECISION | DEC-01 |
-| SEC16-01 | PARTIAL | FIX-04 |
-| SEC19-02 | PARTIAL | FIX-04 |
+| SEC16-01 | IMPLEMENTED | FIX-04 |
+| SEC19-02 | IMPLEMENTED | FIX-04 |
 | SEC20-01 | NEEDS CHED DECISION | DEC-01 |
-| SEC21-01 | PARTIAL | FIX-04 |
+| SEC21-01 | IMPLEMENTED | FIX-04 |
 | SEC24-01 | NEEDS CHED DECISION | DEC-01 |
 | SEC27-01 | PARTIAL | FIX-06 |
 | SEC27-02 | NEEDS CHED DECISION | DEC-01 |
